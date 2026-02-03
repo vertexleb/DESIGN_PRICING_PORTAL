@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vertex Design - Design Services Offer</title>
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <!-- Print-only header for professional PDF proposals -->
+    <div class="print-header" aria-hidden="true">
+        <div class="print-header-brand">
+            <img src="assets/logo.png" alt="Vertex Design" class="print-logo">
+            <div class="print-company-info">
+                <p class="print-company-name">Vertex Design Buildings General Contracting Co.</p>
+                <p class="print-company-tagline">Interior Design & Fit-Out Solutions</p>
+            </div>
+        </div>
+        <div class="print-header-meta">
+            <h1 class="print-title">Design Services Proposal</h1>
+            <div class="print-meta-details">
+                <p>Quote ID: <strong id="print-quote-id">-</strong></p>
+                <p>Date: <strong id="print-date">-</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-shell">
+        <header class="hero">
+            <a class="logo-link" href="./" aria-label="Vertex Design - Reload">
+                <img src="assets/logo.png" alt="Vertex Design logo">
+            </a>
+            <div class="hero-title">
+                <p class="eyebrow">Vertex Design</p>
+                <h1>Design Services Offer</h1>
+                <p class="subtitle">Design-Only | Budgetary + Formal Proposal</p>
+            </div>
+        </header>
+        <div id="config-warning" class="warning-banner" hidden></div>
+
+        <main class="layout">
+            <section class="panel form-panel">
+                <form id="pricing-form" autocomplete="off">
+                    <h2>Project Inputs</h2>
+                    <div class="field-grid">
+                        <label>
+                            <span>Client / Company Name (optional)</span>
+                            <input type="text" name="clientName">
+                        </label>
+                        <label>
+                            <span>Project Name (optional)</span>
+                            <input type="text" name="projectName">
+                        </label>
+                        <label>
+                            <span>Location (optional)</span>
+                            <input type="text" name="location">
+                        </label>
+                        <label>
+                            <span>Project Type</span>
+                            <select name="projectType">
+                                <option value="Retail">Retail</option>
+                                <option value="F&B">F&amp;B</option>
+                                <option value="Office">Office</option>
+                                <option value="Clinic">Clinic</option>
+                                <option value="Showroom">Showroom</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Area (sqm)</span>
+                            <input type="number" name="area" min="1" step="1" required>
+                        </label>
+                        <label>
+                            <span>Package</span>
+                            <select name="package">
+                                <option value="A">A - Concept Package</option>
+                                <option value="B" selected>B - Full Design Development</option>
+                                <option value="C">C - Rollout Kit</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Complexity</span>
+                            <select name="complexity">
+                                <option value="Standard">Standard</option>
+                                <option value="Enhanced">Enhanced</option>
+                                <option value="Specialized">Specialized</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Complexity Level</span>
+                            <select name="complexityLevel">
+                                <option value="low">Low</option>
+                                <option value="typical" selected>Typical</option>
+                                <option value="high">High</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Number of Sites</span>
+                            <input type="number" name="siteCount" min="1" value="1" required>
+                        </label>
+                        <label>
+                            <span>Timeline Urgency</span>
+                            <select name="urgency">
+                                <option value="Normal">Normal</option>
+                                <option value="Fast-track">Fast-track</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <fieldset class="addons">
+                        <legend>Add-ons</legend>
+                        <label>
+                            <input type="checkbox" name="addOns" value="authority_approval_documentation">
+                            <span>Authority approval documentation</span>
+                        </label>
+                        <label class="addon-inline">
+                            <input type="checkbox" name="addOns" value="additional_renderings_per_view" id="add-on-renderings">
+                            <span>Additional renderings (per view)</span>
+                            <input type="number" name="additionalRenderingsCount" min="0" value="0" aria-label="Additional renderings count">
+                        </label>
+                        <label>
+                            <input type="checkbox" name="addOns" value="full_mep_engineering_coordination">
+                            <span>Full MEP engineering coordination</span>
+                        </label>
+                    </fieldset>
+
+                    <div id="form-feedback" class="feedback" role="alert" aria-live="assertive"></div>
+                </form>
+            </section>
+
+            <div class="panel-row">
+                <section class="panel offer-panel">
+                    <div class="offer-header">
+                        <div>
+                            <p class="eyebrow">Design Services Offer</p>
+                            <h2>Design Services Offer</h2>
+                            <p class="meta-line">Quote ID <strong id="quote-id">-</strong> | Date <span id="offer-date">-</span></p>
+                            <p class="tier-line">Pricing Tier: Preferred Vendor (Competitive)</p>
+                        </div>
+                        <div class="offer-toggle" role="group" aria-label="Offer mode">
+                            <label class="toggle-option">
+                                <input type="radio" name="offerMode" value="budgetary">
+                                <span>Budgetary Estimate</span>
+                            </label>
+                            <label class="toggle-option">
+                                <input type="radio" name="offerMode" value="formal">
+                                <span>Formal Offer</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="offer-output" class="offer-output">
+                        <p class="placeholder">Enter project details to generate the offer.</p>
+                    </div>
+
+                    <textarea id="offer-text" class="sr-only" readonly aria-label="Offer text (plain)"></textarea>
+
+                    <div class="actions">
+                        <button type="button" id="copy-offer" class="primary">Copy Offer</button>
+                        <button type="button" id="print-offer">Print / Save PDF</button>
+                    </div>
+                </section>
+
+                <section class="panel package-panel" aria-live="polite">
+                    <p class="section-title">Package Details</p>
+                    <h3 id="package-title">-</h3>
+                    <p class="package-purpose" id="package-purpose">-</p>
+                    <div class="package-block">
+                        <p class="section-title">Included Deliverables</p>
+                        <ul id="package-deliverables" class="bullet-list"></ul>
+                    </div>
+                    <div class="package-meta">
+                        <div>
+                            <span class="label">Revisions included</span>
+                            <span id="package-revisions">-</span>
+                        </div>
+                        <div>
+                            <span class="label">Typical timeline</span>
+                            <span id="package-timeline">-</span>
+                        </div>
+                    </div>
+                    <div class="package-block">
+                        <p class="section-title">Stage Breakdown</p>
+                        <ul id="package-stages" class="bullet-list"></ul>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <footer class="site-footer">
+        <div>
+            <p>Vertex Design Buildings General Contracting Co.</p>
+            <p>Salmiya  Block 4</p>
+            <p>Salem Al-Mubarak Street</p>
+            <p>Tala Center (Tala Complex)</p>
+            <p>Mezzanine Floor, Office No. 6</p>
+            <p>Kuwait</p>
+        </div>
+        <div>
+            <p>Contacts</p>
+            <p>Tel: +965 2571 2021</p>
+            <p>Mobile: +965 9721 9663</p>
+            <p>Email: info@VertexDesignkw.com</p>
+        </div>
+    </footer>
+
+    <script src="assets/app.js" defer></script>
+</body>
+</html>

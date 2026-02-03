@@ -1,0 +1,175 @@
+{
+    "fx_reference_date": "2026-01",
+    "public_mode": false,
+    "currency": "KWD",
+    "budgetary_range_percent": 15,
+    "anchor_area_sqm": 120,
+    "anchor_package": "B",
+    "anchor_complexity": "Standard",
+    "anchor_rate_kwd_per_sqm_min": 16,
+    "anchor_rate_kwd_per_sqm_default": 17,
+    "anchor_rate_kwd_per_sqm_max": 18,
+    "fast_track_multiplier": 1.15,
+    "small_area_threshold_sqm": 80,
+    "small_area_uplift_percent": 10,
+    "small_area_uplift_cap_kwd": 150,
+    "medium_project_range_sqm": [80, 300],
+    "large_area_threshold_sqm": 300,
+    "large_area_discount_kwd_per_sqm": 1.5,
+    "very_large_area_threshold_sqm": 1000,
+    "very_large_area_discount_kwd_per_sqm": 3.0,
+    "package_effort_factor": {
+        "A": 0.65,
+        "B": 1.0,
+        "C": 1.0
+    },
+    "min_fee_by_package": {
+        "A": 500,
+        "B": 1000,
+        "C": 400
+    },
+    "complexity_levels": ["low", "typical", "high"],
+    "complexity_additions_kwd": {
+        "Standard": {"low": 0, "typical": 0, "high": 0},
+        "Enhanced": {"low": 400, "typical": 400, "high": 400},
+        "Specialized": {"low": 1200, "typical": 1200, "high": 1200}
+    },
+    "rollout_adaptation_mode": "percent_of_site1_with_min",
+    "rollout_adaptation_percent_of_site1": 25,
+    "rollout_adaptation_min_kwd_per_site": 400,
+    "add_ons": {
+        "authority_approval_documentation": 600,
+        "additional_renderings_per_view": 80,
+        "full_mep_engineering_coordination": 1500
+    },
+    "offer_validity_days": 14,
+    "payment_terms": {
+        "net_days": 30,
+        "milestones": [
+            {"label": "Start / Mobilization", "percent": 30},
+            {"label": "Concept Approval", "percent": 30},
+            {"label": "Tender Package Delivery", "percent": 40}
+        ]
+    },
+    "assumptions": [
+        "Single floor unless stated otherwise",
+        "Client provides as-built drawings or landlord layout drawings",
+        "Client provides brand guidelines and operational requirements",
+        "Timely approvals and decision-making",
+        "Site access and surveys arranged by client"
+    ],
+    "exclusions": [
+        "MEP engineering calculations and design",
+        "Structural engineering calculations",
+        "Permit fees and authority submission stamping",
+        "Full construction supervision unless added",
+        "Procurement and ordering unless added"
+    ],
+    "revisions_out_of_scope_note": "Additional options, scope changes, or changes after approval are treated as out-of-scope and may require a separate fee.",
+    "next_steps": [
+        "Confirm scope and package selection",
+        "Provide site documents and brand guidelines",
+        "Schedule kickoff meeting"
+    ],
+    "company_info": {
+        "name": "Vertex Design Buildings General Contracting Co.",
+        "address_lines": [
+            "Salmiya  Block 4",
+            "Salem Al-Mubarak Street",
+            "Tala Center (Tala Complex)",
+            "Mezzanine Floor, Office No. 6",
+            "Kuwait"
+        ],
+        "contacts": {
+            "tel": "+965 2571 2021",
+            "mobile": "+965 9721 9663",
+            "email": "info@VertexDesignkw.com"
+        }
+    },
+    "timeline_by_package": {
+        "A": {
+            "typical_weeks_min": 1,
+            "typical_weeks_max": 2,
+            "label": "1-2 weeks (working)"
+        },
+        "B": {
+            "typical_weeks_min": 3,
+            "typical_weeks_max": 5,
+            "label": "3-5 weeks (working)"
+        },
+        "C": {
+            "typical_weeks_min": 4,
+            "typical_weeks_max": 6,
+            "label": "Prototype 4-6 weeks + adaptations 3-5 working days/site",
+            "adaptation_days_min": 3,
+            "adaptation_days_max": 5
+        }
+    },
+    "package_details": {
+        "A": {
+            "title": "Package A - Concept Package",
+            "purpose": "Brief summary, mood boards, preliminary layouts, initial palette, high-level budget.",
+            "deliverables": [
+                "Design brief summary and scope alignment",
+                "Concept mood boards and direction",
+                "Preliminary layouts and zoning",
+                "Initial material palette",
+                "High-level budget guidance"
+            ],
+            "revisions_included": 2,
+            "typical_timeline_weeks": "1-2 weeks (working)",
+            "stage_breakdown": [
+                "Stage 1: Discovery + Brief",
+                "Stage 2: Concept Direction",
+                "Stage 3: Preliminary Layouts",
+                "Stage 4: Palette + Key Decisions",
+                "Stage 5: Budget Alignment",
+                "Stage 6: Review + Revisions"
+            ]
+        },
+        "B": {
+            "title": "Package B - Full Design Development + Tender Set",
+            "purpose": "Detailed layouts, 3D views, specs, joinery, ceiling/lighting plans, tender-ready drawings, BOQ support notes.",
+            "deliverables": [
+                "Detailed layouts and final GA",
+                "3D views (agreed quantity)",
+                "Material and finishes specifications",
+                "Joinery and millwork details",
+                "Ceiling and lighting plans",
+                "Tender-ready drawing package",
+                "BOQ support notes"
+            ],
+            "revisions_included": 3,
+            "typical_timeline_weeks": "3-5 weeks (working)",
+            "stage_breakdown": [
+                "Stage 1: Discovery + Brief",
+                "Stage 2: Concept Direction",
+                "Stage 3: Space Planning",
+                "Stage 4: Design Development",
+                "Stage 5: Tender Package",
+                "Stage 6: Review + Close-out"
+            ]
+        },
+        "C": {
+            "title": "Package C - Rollout Kit",
+            "purpose": "Master standards, adaptation templates, modular system, supplier specifications.",
+            "deliverables": [
+                "Master standards and guidelines",
+                "Adaptation templates for new sites",
+                "Modular detailing system",
+                "Supplier specifications pack",
+                "Prototype site documentation"
+            ],
+            "revisions_included": 2,
+            "typical_timeline_weeks": "Prototype 4-6 weeks + adaptations 3-5 working days/site",
+            "stage_breakdown": [
+                "Stage 1: Discovery + Brief",
+                "Stage 2: Concept Direction",
+                "Stage 3: Space Planning",
+                "Stage 4: Design Development",
+                "Stage 5: Rollout Standards",
+                "Stage 6: Adaptation Prep"
+            ]
+        }
+    }
+}
