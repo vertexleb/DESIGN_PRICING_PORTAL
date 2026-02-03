@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Vertex Design - Login to access pricing portal.">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Login - Vertex Design Pricing Portal</title>
+
+    <link rel="icon" type="image/png" href="assets/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles.css">
+    <style>
+        /* Login Page Specific Styles */
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-200) 100%);
+            padding: var(--space-4);
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            background: var(--color-surface);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, #1d1d1f 0%, #424245 100%);
+            padding: var(--space-8) var(--space-6);
+            text-align: center;
+            color: white;
+        }
+
+        .login-header img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: var(--space-4);
+            filter: brightness(0) invert(1);
+        }
+
+        .login-header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: var(--space-2);
+        }
+
+        .login-header p {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+
+        .login-form {
+            padding: var(--space-6);
+        }
+
+        .login-form label {
+            display: block;
+            margin-bottom: var(--space-4);
+        }
+
+        .login-form label span {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-text);
+            margin-bottom: var(--space-2);
+        }
+
+        .login-form input[type="text"],
+        .login-form input[type="password"] {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .login-form input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.15);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            background: var(--color-accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            margin-top: var(--space-2);
+        }
+
+        .login-btn:hover {
+            background: var(--color-accent-dark);
+        }
+
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+
+        .login-divider {
+            display: flex;
+            align-items: center;
+            margin: var(--space-6) 0;
+            color: var(--color-text-muted);
+            font-size: 0.875rem;
+        }
+
+        .login-divider::before,
+        .login-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--gray-300);
+        }
+
+        .login-divider span {
+            padding: 0 var(--space-3);
+        }
+
+        .guest-btn {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            background: transparent;
+            color: var(--color-accent);
+            border: 2px solid var(--color-accent);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .guest-btn:hover {
+            background: var(--color-accent);
+            color: white;
+        }
+
+        .login-error {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            margin-bottom: var(--space-4);
+            display: none;
+        }
+
+        .login-error.show {
+            display: block;
+        }
+
+        .login-footer {
+            text-align: center;
+            padding: var(--space-4) var(--space-6);
+            background: var(--gray-100);
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-page">
+        <div class="login-container">
+            <div class="login-header">
+                <img src="assets/logo.png" alt="Vertex Design">
+                <h1>Design Pricing Portal</h1>
+                <p>Login to access pricing calculator</p>
+            </div>
+
+            <form class="login-form" id="login-form">
+                <div class="login-error" id="login-error">
+                    Invalid username or password. Please try again.
+                </div>
+
+                <label>
+                    <span>Username</span>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required
+                        autocomplete="username">
+                </label>
+
+                <label>
+                    <span>Password</span>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required
+                        autocomplete="current-password">
+                </label>
+
+                <button type="submit" class="login-btn">Login</button>
+
+                <div class="login-divider">
+                    <span>or</span>
+                </div>
+
+                <button type="button" class="guest-btn" id="guest-btn">Continue as Guest</button>
+            </form>
+
+            <div class="login-footer">
+                © 2026 Vertex Design Buildings General Contracting Co.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // User credentials database
+        const USERS = {
+            'admin': {
+                password: 'Amir1981*',
+                role: 'admin',
+                displayName: 'Administrator',
+                discount: 0
+            },
+            'fadi sofan': {
+                password: '123321',
+                role: 'alsirhan',
+                displayName: 'Fadi Sofan (Al Sirhan)',
+                discount: 0.20
+            },
+            'barada': {
+                password: '123321',
+                role: 'alsirhan',
+                displayName: 'Barada (Al Sirhan)',
+                discount: 0.20
+            }
+        };
+
+        // Guest user
+        const GUEST_USER = {
+            role: 'guest',
+            displayName: 'Guest',
+            discount: 0
+        };
+
+        // Handle login form submission
+        document.getElementById('login-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.toLowerCase().trim();
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('login-error');
+
+            // Validate credentials
+            const user = USERS[username];
+            if (user && user.password === password) {
+                // Success - store session
+                sessionStorage.setItem('vertex_user', JSON.stringify({
+                    username: username,
+                    role: user.role,
+                    displayName: user.displayName,
+                    discount: user.discount
+                }));
+
+                // Redirect to main app
+                window.location.href = 'index.html';
+            } else {
+                // Show error
+                errorEl.classList.add('show');
+                document.getElementById('password').value = '';
+                document.getElementById('password').focus();
+            }
+        });
+
+        // Handle guest login
+        document.getElementById('guest-btn').addEventListener('click', function () {
+            sessionStorage.setItem('vertex_user', JSON.stringify(GUEST_USER));
+            window.location.href = 'index.html';
+        });
+
+        // Clear error on input
+        document.querySelectorAll('#login-form input').forEach(input => {
+            input.addEventListener('input', function () {
+                document.getElementById('login-error').classList.remove('show');
+            });
+        });
+
+        // Check if already logged in
+        const existingUser = sessionStorage.getItem('vertex_user');
+        if (existingUser) {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+
+</html>

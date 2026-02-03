@@ -1,7 +1,9 @@
 {
+    "version": "2.0.0",
     "fx_reference_date": "2026-01",
     "public_mode": false,
     "currency": "KWD",
+    "vat_rate": 0,
     "budgetary_range_percent": 15,
     "anchor_area_sqm": 120,
     "anchor_package": "B",
@@ -171,5 +173,10 @@
                 "Stage 6: Adaptation Prep"
             ]
         }
+    },
+    "validation": {
+        "area": {"min": 1, "max": 50000},
+        "sites": {"min": 1, "max": 100},
+        "renderings": {"min": 0, "max": 50}
     }
 }

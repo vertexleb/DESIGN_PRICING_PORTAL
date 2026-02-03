@@ -1,18 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vertex Design - Design Services Offer</title>
-    <!-- Premium Google Fonts -->
+    <meta name="description"
+        content="Vertex Design - Professional design services pricing calculator with instant proposals.">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Vertex Design - Design Services Calculator</title>
+
+    <link rel="icon" type="image/png" href="assets/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="assets/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 </head>
+
 <body>
-    <!-- Print-only header for professional PDF proposals -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Print Header -->
     <div class="print-header" aria-hidden="true">
         <div class="print-header-brand">
             <img src="assets/logo.png" alt="Vertex Design" class="print-logo">
@@ -23,193 +33,866 @@
         </div>
         <div class="print-header-meta">
             <h1 class="print-title">Design Services Proposal</h1>
-            <div class="print-meta-details">
-                <p>Quote ID: <strong id="print-quote-id">-</strong></p>
-                <p>Date: <strong id="print-date">-</strong></p>
-            </div>
+            <p>Quote: <strong id="print-quote-id">-</strong> | <span id="print-date">-</span></p>
         </div>
     </div>
 
     <div class="app-shell">
         <header class="hero">
             <a class="logo-link" href="./" aria-label="Vertex Design - Reload">
-                <img src="assets/logo.png" alt="Vertex Design logo">
+                <img src="assets/logo.png" alt="Vertex Design" width="77" height="77">
             </a>
             <div class="hero-title">
                 <p class="eyebrow">Vertex Design</p>
-                <h1>Design Services Offer</h1>
-                <p class="subtitle">Design-Only | Budgetary + Formal Proposal</p>
+                <h1>Design Services Calculator</h1>
+                <p class="subtitle">Instant pricing for interior design & fit-out services</p>
+            </div>
+            <!-- User Info Section -->
+            <div class="user-info" id="user-info">
+                <!-- Admin Discount Control (visible only to admin) -->
+                <div class="admin-discount-control" id="admin-discount-control" hidden>
+                    <label for="admin-discount-input" class="admin-discount-label">
+                        <span>Discount %</span>
+                        <input type="number" id="admin-discount-input" min="0" max="50" value="0" step="1">
+                    </label>
+                </div>
+                <div class="user-badge" id="user-badge">
+                    <span class="user-name" id="user-name">Guest</span>
+                    <span class="discount-badge" id="discount-badge" hidden>20% OFF</span>
+                </div>
+                <button type="button" class="logout-btn" id="logout-btn" title="Logout">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </button>
             </div>
         </header>
+
         <div id="config-warning" class="warning-banner" hidden></div>
 
-        <main class="layout">
-            <section class="panel form-panel">
-                <form id="pricing-form" autocomplete="off">
-                    <h2>Project Inputs</h2>
-                    <div class="field-grid">
-                        <label>
-                            <span>Client / Company Name (optional)</span>
-                            <input type="text" name="clientName">
-                        </label>
-                        <label>
-                            <span>Project Name (optional)</span>
-                            <input type="text" name="projectName">
-                        </label>
-                        <label>
-                            <span>Location (optional)</span>
-                            <input type="text" name="location">
-                        </label>
-                        <label>
-                            <span>Project Type</span>
-                            <select name="projectType">
-                                <option value="Retail">Retail</option>
-                                <option value="F&B">F&amp;B</option>
-                                <option value="Office">Office</option>
-                                <option value="Clinic">Clinic</option>
-                                <option value="Showroom">Showroom</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </label>
-                        <label>
-                            <span>Area (sqm)</span>
-                            <input type="number" name="area" min="1" step="1" required>
-                        </label>
-                        <label>
-                            <span>Package</span>
-                            <select name="package">
-                                <option value="A">A - Concept Package</option>
-                                <option value="B" selected>B - Full Design Development</option>
-                                <option value="C">C - Rollout Kit</option>
-                            </select>
-                        </label>
-                        <label>
-                            <span>Complexity</span>
-                            <select name="complexity">
-                                <option value="Standard">Standard</option>
-                                <option value="Enhanced">Enhanced</option>
-                                <option value="Specialized">Specialized</option>
-                            </select>
-                        </label>
-                        <label>
-                            <span>Complexity Level</span>
-                            <select name="complexityLevel">
-                                <option value="low">Low</option>
-                                <option value="typical" selected>Typical</option>
-                                <option value="high">High</option>
-                            </select>
-                        </label>
-                        <label>
-                            <span>Number of Sites</span>
-                            <input type="number" name="siteCount" min="1" value="1" required>
-                        </label>
-                        <label>
-                            <span>Timeline Urgency</span>
-                            <select name="urgency">
-                                <option value="Normal">Normal</option>
-                                <option value="Fast-track">Fast-track</option>
-                            </select>
-                        </label>
-                    </div>
+        <main id="main-content" class="layout">
+            <!-- Wizard Progress -->
+            <nav class="wizard-progress" aria-label="Form progress">
+                <ol class="wizard-steps">
+                    <li class="wizard-step active" data-step="1">
+                        <span class="step-number">1</span>
+                        <span class="step-label">Project Facts</span>
+                    </li>
+                    <li class="wizard-step" data-step="2">
+                        <span class="step-number">2</span>
+                        <span class="step-label">Classification</span>
+                    </li>
+                    <li class="wizard-step" data-step="3">
+                        <span class="step-number">3</span>
+                        <span class="step-label">Services</span>
+                    </li>
+                    <li class="wizard-step" data-step="4">
+                        <span class="step-number">4</span>
+                        <span class="step-label">Quote</span>
+                    </li>
+                    <li class="wizard-step" data-step="5">
+                        <span class="step-number">5</span>
+                        <span class="step-label">Proposal</span>
+                    </li>
+                </ol>
+            </nav>
 
-                    <fieldset class="addons">
-                        <legend>Add-ons</legend>
-                        <label>
-                            <input type="checkbox" name="addOns" value="authority_approval_documentation">
-                            <span>Authority approval documentation</span>
-                        </label>
-                        <label class="addon-inline">
-                            <input type="checkbox" name="addOns" value="additional_renderings_per_view" id="add-on-renderings">
-                            <span>Additional renderings (per view)</span>
-                            <input type="number" name="additionalRenderingsCount" min="0" value="0" aria-label="Additional renderings count">
-                        </label>
-                        <label>
-                            <input type="checkbox" name="addOns" value="full_mep_engineering_coordination">
-                            <span>Full MEP engineering coordination</span>
-                        </label>
+            <!-- Form Panel -->
+            <section class="panel form-panel">
+                <form id="pricing-form" autocomplete="off" novalidate>
+
+                    <!-- STEP 1: Project Facts -->
+                    <fieldset class="form-step active" id="step-1">
+                        <legend class="form-step-title">
+                            <span class="step-icon">1</span>
+                            Project Facts
+                        </legend>
+
+                        <!-- Client Info -->
+                        <div class="form-section">
+                            <h3 class="section-heading">Client Information</h3>
+                            <div class="field-grid">
+                                <label for="input-client-name">
+                                    <span>Client / Company Name</span>
+                                    <input type="text" id="input-client-name" name="clientName"
+                                        placeholder="ACME Corporation" autocomplete="organization">
+                                </label>
+                                <label for="input-client-email">
+                                    <span>Email <span class="optional">(optional)</span></span>
+                                    <input type="email" id="input-client-email" name="clientEmail"
+                                        placeholder="client@example.com" autocomplete="email">
+                                </label>
+                                <label for="input-project-name">
+                                    <span>Project Name</span>
+                                    <input type="text" id="input-project-name" name="projectName"
+                                        placeholder="New Retail Store - Avenues Mall">
+                                </label>
+                                <label for="input-location">
+                                    <span>Location</span>
+                                    <input type="text" id="input-location" name="location"
+                                        placeholder="Kuwait City, Kuwait">
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Size Facts -->
+                        <div class="form-section">
+                            <h3 class="section-heading">
+                                Size Details
+                                <button type="button" class="tooltip-trigger"
+                                    data-tooltip="Accurate sizing ensures fair pricing. Number of spaces helps us understand complexity beyond raw area.">?</button>
+                            </h3>
+                            <div class="field-grid">
+                                <label for="input-area">
+                                    <span>Total Floor Area (sqm)</span>
+                                    <input type="number" id="input-area" name="area" min="10" max="50000" step="1"
+                                        required inputmode="numeric" placeholder="250">
+                                    <span class="field-hint">Total interior area including all zones</span>
+                                </label>
+                                <label for="input-spaces">
+                                    <span>
+                                        Number of Distinct Spaces
+                                        <button type="button" class="tooltip-trigger"
+                                            data-tooltip="Count separate rooms, zones, or functional areas. E.g., reception, 3 offices, meeting room, pantry = 6 spaces.">?</button>
+                                    </span>
+                                    <input type="number" id="input-spaces" name="spaces" min="1" max="100" value="4"
+                                        required inputmode="numeric">
+                                    <span class="field-hint">Rooms, zones, or distinct functional areas</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Project Type -->
+                        <div class="form-section">
+                            <h3 class="section-heading">Project Type</h3>
+                            <div class="field-grid">
+                                <label for="input-project-type" class="span-full">
+                                    <span>Primary Function</span>
+                                    <select id="input-project-type" name="projectType" required>
+                                        <option value="">Select type...</option>
+                                        <option value="retail">Retail Store</option>
+                                        <option value="office">Office / Co-working</option>
+                                        <option value="fnb">F&B (Restaurant / Café)</option>
+                                        <option value="showroom">Showroom</option>
+                                        <option value="clinic">Medical Clinic</option>
+                                        <option value="salon">Salon / Spa</option>
+                                        <option value="gym">Gym / Fitness Center</option>
+                                        <option value="hospital">Hospital / Critical Facility</option>
+                                        <option value="datacenter">IT / Data Center</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div id="special-systems-group" class="checkbox-group" hidden>
+                                <p class="group-label">Special Systems <span class="optional">(check all that
+                                        apply)</span></p>
+                                <!-- F&B Systems -->
+                                <label class="checkbox-option" data-category="fnb">
+                                    <input type="checkbox" name="specialSystems" value="kitchen_exhaust">
+                                    <span>Commercial kitchen exhaust</span>
+                                </label>
+                                <label class="checkbox-option" data-category="fnb">
+                                    <input type="checkbox" name="specialSystems" value="grease_trap">
+                                    <span>Grease trap system</span>
+                                </label>
+                                <label class="checkbox-option" data-category="fnb">
+                                    <input type="checkbox" name="specialSystems" value="cold_storage">
+                                    <span>Walk-in cold storage</span>
+                                </label>
+                                <!-- Medical / Hospital Systems -->
+                                <label class="checkbox-option" data-category="clinic hospital">
+                                    <input type="checkbox" name="specialSystems" value="medical_gases">
+                                    <span>Medical gases</span>
+                                </label>
+                                <label class="checkbox-option" data-category="clinic hospital datacenter">
+                                    <input type="checkbox" name="specialSystems" value="clean_room">
+                                    <span>Clean room / controlled environment</span>
+                                </label>
+                                <label class="checkbox-option" data-category="hospital">
+                                    <input type="checkbox" name="specialSystems" value="authority_approval">
+                                    <span>High authority compliance (health, fire, etc.)</span>
+                                </label>
+                                <!-- Datacenter / Gym Systems -->
+                                <label class="checkbox-option" data-category="datacenter gym">
+                                    <input type="checkbox" name="specialSystems" value="heavy_equipment">
+                                    <span>Heavy equipment loads</span>
+                                </label>
+                                <!-- Office Systems -->
+                                <label class="checkbox-option" data-category="office">
+                                    <input type="checkbox" name="specialSystems" value="high_security">
+                                    <span>High security / access control</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Scale Facts -->
+                        <div class="form-section">
+                            <h3 class="section-heading">Scale & Rollout</h3>
+                            <div class="field-grid">
+                                <label for="input-sites">
+                                    <span>Number of Locations</span>
+                                    <input type="number" id="input-sites" name="sites" min="1" max="100" value="1"
+                                        required inputmode="numeric">
+                                    <span class="field-hint">How many sites need design?</span>
+                                </label>
+                                <label for="input-reuse-level" id="reuse-label">
+                                    <span>
+                                        Reuse Level
+                                        <button type="button" class="tooltip-trigger"
+                                            data-tooltip="For multiple sites: New design per site is full effort. Same concept adapted reduces effort. Exact replica is lowest effort but still requires site documentation.">?</button>
+                                    </span>
+                                    <select id="input-reuse-level" name="reuseLevel" disabled>
+                                        <option value="new">New design per site</option>
+                                        <option value="adapted" selected>Same concept adapted per site</option>
+                                        <option value="replica">Exact replica (minimal changes)</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Façade Facts -->
+                        <div class="form-section">
+                            <h3 class="section-heading">
+                                Façade & Signage
+                                <button type="button" class="tooltip-trigger"
+                                    data-tooltip="Exterior works scope. Mall frontage counts. If no exterior, select Interior Only.">?</button>
+                            </h3>
+
+                            <div class="radio-group">
+                                <label class="radio-option">
+                                    <input type="radio" name="facadeType" value="none" checked>
+                                    <span>
+                                        <strong>Interior Only</strong>
+                                        <small>No façade works required</small>
+                                    </span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="facadeType" value="frontage">
+                                    <span>
+                                        <strong>Mall Frontage</strong>
+                                        <small>Shopfront / storefront design</small>
+                                    </span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="facadeType" value="enhanced">
+                                    <span>
+                                        <strong>Enhanced Frontage</strong>
+                                        <small>Feature portal, decorative cladding</small>
+                                    </span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="facadeType" value="full">
+                                    <span>
+                                        <strong>Full Façade</strong>
+                                        <small>Complete exterior with cladding system</small>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div id="facade-details" class="conditional-fields" hidden>
+                                <div class="field-grid">
+                                    <label for="input-facade-area">
+                                        <span>Façade Area (sqm)</span>
+                                        <input type="number" id="input-facade-area" name="facadeArea" min="0" max="5000"
+                                            value="0" inputmode="numeric">
+                                    </label>
+                                    <label for="input-signage-count">
+                                        <span>Number of Signs</span>
+                                        <select id="input-signage-count" name="signageCount">
+                                            <option value="0">None</option>
+                                            <option value="1" selected>1 sign</option>
+                                            <option value="2-3">2-3 signs</option>
+                                            <option value="4+">4+ signs</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <div class="checkbox-group inline">
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" name="facadeFeatures" value="cladding">
+                                        <span>Cladding system</span>
+                                    </label>
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" name="facadeFeatures" value="lighting">
+                                        <span>Exterior lighting</span>
+                                    </label>
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" name="facadeFeatures" value="canopy">
+                                        <span>Canopy / awning</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step-actions">
+                            <button type="button" class="btn-next primary" data-next="2">
+                                Continue to Classification
+                                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                    </fieldset>
+
+                    <!-- STEP 2: Classification (Derived) -->
+                    <fieldset class="form-step" id="step-2">
+                        <legend class="form-step-title">
+                            <span class="step-icon">2</span>
+                            Project Classification
+                        </legend>
+
+                        <div class="classification-intro">
+                            <p>Based on your project facts, we've classified your project as follows. This
+                                classification determines pricing multipliers and timeline estimates.</p>
+                        </div>
+
+                        <div class="classification-grid">
+                            <div class="classification-card" id="class-size">
+                                <div class="class-icon">
+                                    <svg class="icon" viewBox="0 0 24 24">
+                                        <path d="M21 21H3V3h18v18zM9 9h6v6H9V9z" />
+                                        <path d="M3 9h6M15 9h6M9 3v6M9 15v6M15 3v6M15 15v6M3 15h6M15 15h6" />
+                                    </svg>
+                                </div>
+                                <div class="class-label">Size</div>
+                                <div class="class-value" id="derived-size">-</div>
+                                <div class="class-reason" id="reason-size">-</div>
+                            </div>
+                            <div class="classification-card" id="class-complexity">
+                                <div class="class-icon">
+                                    <svg class="icon" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="3" />
+                                        <path
+                                            d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+                                    </svg>
+                                </div>
+                                <div class="class-label">Complexity</div>
+                                <div class="class-value" id="derived-complexity">-</div>
+                                <div class="class-reason" id="reason-complexity">-</div>
+                            </div>
+                            <div class="classification-card" id="class-scale">
+                                <div class="class-icon">
+                                    <svg class="icon" viewBox="0 0 24 24">
+                                        <rect x="3" y="9" width="7" height="12" rx="1" />
+                                        <rect x="14" y="4" width="7" height="17" rx="1" />
+                                        <path d="M10 12h4" />
+                                    </svg>
+                                </div>
+                                <div class="class-label">Scale</div>
+                                <div class="class-value" id="derived-scale">-</div>
+                                <div class="class-reason" id="reason-scale">-</div>
+                            </div>
+                            <div class="classification-card" id="class-facade">
+                                <div class="class-icon">
+                                    <svg class="icon" viewBox="0 0 24 24">
+                                        <path d="M3 21V8l9-5 9 5v13" />
+                                        <rect x="7" y="11" width="4" height="6" />
+                                        <rect x="13" y="11" width="4" height="6" />
+                                        <path d="M10 21v-4h4v4" />
+                                    </svg>
+                                </div>
+                                <div class="class-label">Façade</div>
+                                <div class="class-value" id="derived-facade">-</div>
+                                <div class="class-reason" id="reason-facade">-</div>
+                            </div>
+                        </div>
+
+                        <div class="override-section">
+                            <details class="override-details">
+                                <summary>Request classification review</summary>
+                                <div class="override-content">
+                                    <p class="warning-text">Classification changes may trigger scope review after design
+                                        commencement. Proceed with caution.</p>
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" name="overrideAcknowledge" id="override-acknowledge">
+                                        <span>I acknowledge that manual adjustments may result in scope changes and
+                                            revised quotes after design review.</span>
+                                    </label>
+                                    <div id="override-fields" class="override-fields" hidden>
+                                        <label for="override-size">Size Override</label>
+                                        <select id="override-size" name="overrideSize">
+                                            <option value="">Use derived</option>
+                                            <option value="small">Small</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="large">Large</option>
+                                        </select>
+                                        <label for="override-complexity">Complexity Override</label>
+                                        <select id="override-complexity" name="overrideComplexity">
+                                            <option value="">Use derived</option>
+                                            <option value="simple">Simple</option>
+                                            <option value="normal">Normal</option>
+                                            <option value="complex">Complex</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+
+                        <div class="step-actions">
+                            <button type="button" class="btn-back" data-prev="1">
+                                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                                Back
+                            </button>
+                            <button type="button" class="btn-next primary" data-next="3">
+                                Select Services
+                                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                    </fieldset>
+
+                    <!-- STEP 3: Services Selection -->
+                    <fieldset class="form-step" id="step-3">
+                        <legend class="form-step-title">
+                            <span class="step-icon">3</span>
+                            Select Services
+                        </legend>
+
+                        <div class="package-selector">
+                            <label for="package-type">
+                                <span>Select Package</span>
+                                <select id="package-type" name="packageType">
+                                    <option value="A">Package A – Concept (Brief, Layouts, Budget)</option>
+                                    <option value="B" selected>Package B – Full Design + Tender Set</option>
+                                    <option value="C">Package C – Rollout Kit</option>
+                                    <option value="custom">⭐ Customize Your Package (Recommended)</option>
+                                </select>
+                            </label>
+                            <p class="package-description" id="package-description">Full design development with
+                                tender-ready drawings, specs, and coordination.</p>
+                        </div>
+
+                        <div class="services-grid" id="services-grid">
+                            <!-- S1: Design Visualization -->
+                            <div class="service-card">
+                                <label class="service-header">
+                                    <input type="checkbox" name="services" value="S1" checked>
+                                    <div class="service-info">
+                                        <strong>S1: Design Visualization</strong>
+                                        <span class="service-duration">1-2 weeks</span>
+                                    </div>
+                                    <span class="service-price" data-service="S1">-</span>
+                                </label>
+                                <div class="service-details">
+                                    <ul>
+                                        <li>3D design modeling</li>
+                                        <li>Rendered views (qty by scope)</li>
+                                        <li>Material mood boards</li>
+                                        <li>Color scheme development</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- S2: Architectural Design -->
+                            <div class="service-card">
+                                <label class="service-header">
+                                    <input type="checkbox" name="services" value="S2" checked>
+                                    <div class="service-info">
+                                        <strong>S2: Architectural Design Package</strong>
+                                        <span class="service-duration">2-3 weeks</span>
+                                    </div>
+                                    <span class="service-price" data-service="S2">-</span>
+                                </label>
+                                <div class="service-details">
+                                    <ul>
+                                        <li>General arrangement plans</li>
+                                        <li>Floor layouts & zoning</li>
+                                        <li>Key elevations & sections</li>
+                                        <li>Door & window schedules</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- S3: MEP Design -->
+                            <div class="service-card">
+                                <label class="service-header">
+                                    <input type="checkbox" name="services" value="S3" checked>
+                                    <div class="service-info">
+                                        <strong>S3: MEP Design Package</strong>
+                                        <span class="service-duration">1-2 weeks</span>
+                                    </div>
+                                    <span class="service-price" data-service="S3">-</span>
+                                </label>
+                                <div class="service-details">
+                                    <ul>
+                                        <li>MEP drawings coordination</li>
+                                        <li>RCP / lighting layout</li>
+                                        <li>Electrical outlet plans</li>
+                                        <li>Coordination notes</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- S4: Material & Detail Specs -->
+                            <div class="service-card">
+                                <label class="service-header">
+                                    <input type="checkbox" name="services" value="S4" checked>
+                                    <div class="service-info">
+                                        <strong>S4: Material & Detail Specs</strong>
+                                        <span class="service-duration">1-2 weeks</span>
+                                    </div>
+                                    <span class="service-price" data-service="S4">-</span>
+                                </label>
+                                <div class="service-details">
+                                    <ul>
+                                        <li>Finishes specifications</li>
+                                        <li>Joinery & millwork details</li>
+                                        <li>Material cut sheets</li>
+                                        <li>Key construction details</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- S5: Tender Documentation -->
+                            <div class="service-card">
+                                <label class="service-header">
+                                    <input type="checkbox" name="services" value="S5" checked>
+                                    <div class="service-info">
+                                        <strong>S5: Tender Documentation</strong>
+                                        <span class="service-duration">1 week</span>
+                                    </div>
+                                    <span class="service-price" data-service="S5">-</span>
+                                </label>
+                                <div class="service-details">
+                                    <ul>
+                                        <li>Tender-ready drawing set</li>
+                                        <li>Drawing coordination</li>
+                                        <li>Specifications package</li>
+                                        <li>Tender instructions</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- S6: BOQ & Cost Docs -->
+                            <div class="service-card">
+                                <label class="service-header">
+                                    <input type="checkbox" name="services" value="S6">
+                                    <div class="service-info">
+                                        <strong>S6: BOQ & Cost Documentation</strong>
+                                        <span class="service-duration">1 week</span>
+                                    </div>
+                                    <span class="service-price" data-service="S6">-</span>
+                                </label>
+                                <div class="service-details">
+                                    <ul>
+                                        <li>Bill of Quantities</li>
+                                        <li>Cost clarifications</li>
+                                        <li>Scope assumptions</li>
+                                        <li>Contractor notes</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Façade Services (conditional) -->
+                        <div id="facade-services" class="services-section" hidden>
+                            <h3 class="section-heading">Façade & Signage Services</h3>
+                            <div class="services-grid">
+                                <div class="service-card">
+                                    <label class="service-header">
+                                        <input type="checkbox" name="services" value="SF1" checked>
+                                        <div class="service-info">
+                                            <strong>SF1: Façade Design & Detailing</strong>
+                                            <span class="service-duration">1-2 weeks</span>
+                                        </div>
+                                        <span class="service-price" data-service="SF1">-</span>
+                                    </label>
+                                    <div class="service-details">
+                                        <ul>
+                                            <li>Façade elevations</li>
+                                            <li>Cladding details</li>
+                                            <li>Material specifications</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="service-card">
+                                    <label class="service-header">
+                                        <input type="checkbox" name="services" value="SF2" checked>
+                                        <div class="service-info">
+                                            <strong>SF2: Signage & Branding Integration</strong>
+                                            <span class="service-duration">1 week</span>
+                                        </div>
+                                        <span class="service-price" data-service="SF2">-</span>
+                                    </label>
+                                    <div class="service-details">
+                                        <ul>
+                                            <li>Signage design layout</li>
+                                            <li>Brand integration</li>
+                                            <li>Lighting coordination</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Add-ons -->
+                        <div class="services-section">
+                            <h3 class="section-heading">
+                                Add-ons
+                                <span class="optional">(optional)</span>
+                            </h3>
+                            <div class="addons-grid">
+                                <label class="addon-option">
+                                    <input type="checkbox" name="addons" value="extra_renders">
+                                    <span class="addon-content">
+                                        <span class="addon-label">Additional renders</span>
+                                        <span class="addon-price">KWD 80/view</span>
+                                    </span>
+                                    <input type="number" name="extraRenderCount" min="0" max="20" value="0"
+                                        class="addon-qty" disabled>
+                                </label>
+                                <label class="addon-option">
+                                    <input type="checkbox" name="addons" value="extra_revisions">
+                                    <span class="addon-content">
+                                        <span class="addon-label">Extra revision rounds</span>
+                                        <span class="addon-price">KWD 150/round</span>
+                                    </span>
+                                    <input type="number" name="extraRevisionCount" min="0" max="10" value="0"
+                                        class="addon-qty" disabled>
+                                </label>
+                                <label class="addon-option">
+                                    <input type="checkbox" name="addons" value="authority_submission">
+                                    <span class="addon-content">
+                                        <span class="addon-label">Authority submission set</span>
+                                        <span class="addon-price">KWD 600</span>
+                                    </span>
+                                </label>
+                                <label class="addon-option">
+                                    <input type="checkbox" name="addons" value="site_visits">
+                                    <span class="addon-content">
+                                        <span class="addon-label">Site visits (2 included)</span>
+                                        <span class="addon-price">KWD 50/extra</span>
+                                    </span>
+                                    <input type="number" name="siteVisitCount" min="0" max="20" value="0"
+                                        class="addon-qty" disabled>
+                                </label>
+                                <label class="addon-option">
+                                    <input type="checkbox" name="addons" value="fast_track">
+                                    <span class="addon-content">
+                                        <span class="addon-label">Fast-track delivery</span>
+                                        <span class="addon-price">+15%</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="step-actions">
+                            <button type="button" class="btn-back" data-prev="2">
+                                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                                Back
+                            </button>
+                            <button type="button" class="btn-next primary" data-next="4">
+                                View Quote
+                                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Floating Total Widget (Mobile) -->
+                        <div id="floating-total" class="floating-total">
+                            <div class="floating-total-inner">
+                                <span class="floating-label">Estimated Total</span>
+                                <span class="floating-amount" id="floating-amount">KWD 0</span>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- STEP 4: Quote Breakdown -->
+                    <fieldset class="form-step" id="step-4">
+                        <legend class="form-step-title">
+                            <span class="step-icon">4</span>
+                            Quote Breakdown
+                        </legend>
+
+                        <div class="quote-summary">
+                            <div class="quote-header">
+                                <div>
+                                    <p class="eyebrow">Design Fee</p>
+                                    <p class="quote-total" id="quote-total">KWD 0</p>
+                                    <p class="quote-timeline" id="quote-timeline">Timeline: -</p>
+                                </div>
+                                <div class="quote-meta">
+                                    <p>Quote ID: <strong id="quote-id">-</strong></p>
+                                    <p>Date: <span id="offer-date">-</span></p>
+                                    <p class="validity">Valid for 14 days</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="breakdown-section">
+                            <h3 class="section-heading">Service Fees</h3>
+                            <table class="breakdown-table" id="services-breakdown">
+                                <thead>
+                                    <tr>
+                                        <th>Service</th>
+                                        <th>Base</th>
+                                        <th>Multipliers</th>
+                                        <th>Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+
+                        <div class="breakdown-section" id="addons-breakdown-section" hidden>
+                            <h3 class="section-heading">Add-ons</h3>
+                            <ul class="breakdown-list" id="addons-breakdown"></ul>
+                        </div>
+
+                        <div class="breakdown-section" id="rollout-breakdown-section" hidden>
+                            <h3 class="section-heading">Rollout Adaptation</h3>
+                            <p id="rollout-breakdown">-</p>
+                        </div>
+
+                        <div class="breakdown-section">
+                            <h3 class="section-heading">Summary</h3>
+                            <ul class="breakdown-list" id="summary-breakdown">
+                                <li><span>Services Subtotal</span><span id="subtotal-services">-</span></li>
+                                <li><span>Add-ons</span><span id="subtotal-addons">-</span></li>
+                                <li><span>Rollout Sites</span><span id="subtotal-rollout">-</span></li>
+                                <li class="total"><span>Total Before VAT</span><span id="total-before-vat">-</span></li>
+                                <li id="vat-row" hidden><span>VAT (<span id="vat-rate">0</span>%)</span><span
+                                        id="vat-amount">-</span></li>
+                                <li id="discount-row" class="discount-row" hidden><span>Discount</span><span>-</span>
+                                </li>
+                                <li class="grand-total"><span>Grand Total</span><span id="grand-total">-</span></li>
+                            </ul>
+                        </div>
+
+                        <div class="why-price">
+                            <details>
+                                <summary>Why this price?</summary>
+                                <div class="why-content" id="pricing-explanation">
+                                    <p>Loading...</p>
+                                </div>
+                            </details>
+                        </div>
+
+                        <div class="step-actions">
+                            <button type="button" class="btn-back" data-prev="3">
+                                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                                Back
+                            </button>
+                            <button type="button" class="btn-next primary" data-next="5">
+                                Generate Proposal
+                                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                    </fieldset>
+
+                    <!-- STEP 5: Proposal Export -->
+                    <fieldset class="form-step" id="step-5">
+                        <legend class="form-step-title">
+                            <span class="step-icon">5</span>
+                            Proposal
+                        </legend>
+
+                        <!-- Floating Action Bar for Proposal Page -->
+                        <div id="proposal-floating-bar" class="proposal-floating-bar">
+                            <button type="button" id="download-pdf" class="floating-action-btn primary"
+                                title="Download PDF">
+                                <svg class="icon" viewBox="0 0 24 24">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>PDF</span>
+                            </button>
+                            <button type="button" id="print-offer" class="floating-action-btn" title="Print">
+                                <svg class="icon" viewBox="0 0 24 24">
+                                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                    <path
+                                        d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
+                                    </path>
+                                    <rect x="6" y="14" width="12" height="8"></rect>
+                                </svg>
+                                <span>Print</span>
+                            </button>
+                            <button type="button" id="copy-offer" class="floating-action-btn" title="Copy Text">
+                                <svg class="icon" viewBox="0 0 24 24">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span>Copy</span>
+                            </button>
+                            <button type="button" id="save-quote" class="floating-action-btn" title="Save Quote">
+                                <svg class="icon" viewBox="0 0 24 24">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                                <span>Save</span>
+                            </button>
+                        </div>
+
+                        <div id="offer-output" class="offer-preview">
+                            <p class="placeholder">Proposal will appear here...</p>
+                        </div>
+
+                        <div class="step-actions">
+                            <button type="button" class="btn-back" data-prev="4">
+                                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                                Back
+                            </button>
+                            <button type="button" id="new-quote" class="btn-secondary">
+                                Start New Quote
+                            </button>
+                        </div>
                     </fieldset>
 
                     <div id="form-feedback" class="feedback" role="alert" aria-live="assertive"></div>
                 </form>
             </section>
 
-            <div class="panel-row">
-                <section class="panel offer-panel">
-                    <div class="offer-header">
-                        <div>
-                            <p class="eyebrow">Design Services Offer</p>
-                            <h2>Design Services Offer</h2>
-                            <p class="meta-line">Quote ID <strong id="quote-id">-</strong> | Date <span id="offer-date">-</span></p>
-                            <p class="tier-line">Pricing Tier: Preferred Vendor (Competitive)</p>
-                        </div>
-                        <div class="offer-toggle" role="group" aria-label="Offer mode">
-                            <label class="toggle-option">
-                                <input type="radio" name="offerMode" value="budgetary">
-                                <span>Budgetary Estimate</span>
-                            </label>
-                            <label class="toggle-option">
-                                <input type="radio" name="offerMode" value="formal">
-                                <span>Formal Offer</span>
-                            </label>
-                        </div>
+            <!-- Sidebar - Quote History Only -->
+            <aside class="sidebar" id="sidebar">
+                <!-- Quote History Card -->
+                <div class="history-card">
+                    <h3 class="sidebar-title">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        Quote History
+                    </h3>
+                    <div id="quote-history" class="quote-history">
+                        <p class="empty-state">No saved quotes yet.</p>
                     </div>
-
-                    <div id="offer-output" class="offer-output">
-                        <p class="placeholder">Enter project details to generate the offer.</p>
-                    </div>
-
-                    <textarea id="offer-text" class="sr-only" readonly aria-label="Offer text (plain)"></textarea>
-
-                    <div class="actions">
-                        <button type="button" id="copy-offer" class="primary">Copy Offer</button>
-                        <button type="button" id="print-offer">Print / Save PDF</button>
-                    </div>
-                </section>
-
-                <section class="panel package-panel" aria-live="polite">
-                    <p class="section-title">Package Details</p>
-                    <h3 id="package-title">-</h3>
-                    <p class="package-purpose" id="package-purpose">-</p>
-                    <div class="package-block">
-                        <p class="section-title">Included Deliverables</p>
-                        <ul id="package-deliverables" class="bullet-list"></ul>
-                    </div>
-                    <div class="package-meta">
-                        <div>
-                            <span class="label">Revisions included</span>
-                            <span id="package-revisions">-</span>
-                        </div>
-                        <div>
-                            <span class="label">Typical timeline</span>
-                            <span id="package-timeline">-</span>
-                        </div>
-                    </div>
-                    <div class="package-block">
-                        <p class="section-title">Stage Breakdown</p>
-                        <ul id="package-stages" class="bullet-list"></ul>
-                    </div>
-                </section>
-            </div>
+                </div>
+            </aside>
         </main>
     </div>
 
     <footer class="site-footer">
         <div>
             <p>Vertex Design Buildings General Contracting Co.</p>
-            <p>Salmiya  Block 4</p>
-            <p>Salem Al-Mubarak Street</p>
-            <p>Tala Center (Tala Complex)</p>
-            <p>Mezzanine Floor, Office No. 6</p>
-            <p>Kuwait</p>
+            <p>Salmiya Block 4, Salem Al-Mubarak Street</p>
+            <p>Tala Center, Mezzanine Floor, Office 6, Kuwait</p>
         </div>
         <div>
-            <p>Contacts</p>
-            <p>Tel: +965 2571 2021</p>
-            <p>Mobile: +965 9721 9663</p>
+            <p>Tel: +965 2571 2021 | Mobile: +965 9721 9663</p>
             <p>Email: info@VertexDesignkw.com</p>
         </div>
     </footer>
 
+    <div id="tooltip-container" class="tooltip-container" role="tooltip" aria-hidden="true"></div>
+    <textarea id="offer-text" class="sr-only" readonly aria-label="Offer text"></textarea>
+
     <script src="assets/app.js" defer></script>
 </body>
+
 </html>

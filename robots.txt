@@ -1,0 +1,7 @@
+# Vertex Design Pricing Portal - robots.txt
+# This internal tool should not be indexed by search engines
+
+User-agent: *
+Disallow: /
+
+# Block all web crawlers from indexing this internal pricing tool

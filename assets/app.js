@@ -1,980 +1,1562 @@
+/**
+ * Vertex Design Pricing Portal v4.0
+ * Refactored: Modular structure, external config loading
+ * Packages aligned: A (Concept), B (Full Design), C (Rollout)
+ */
 
-const DEFAULT_CONFIG = {
-    fx_reference_date: "2026-01",
-    public_mode: false,
-    currency: "KWD",
-    budgetary_range_percent: 15,
-    anchor_area_sqm: 120,
-    anchor_package: "B",
-    anchor_complexity: "Standard",
-    anchor_rate_kwd_per_sqm_min: 16,
-    anchor_rate_kwd_per_sqm_default: 17,
-    anchor_rate_kwd_per_sqm_max: 18,
-    fast_track_multiplier: 1.15,
-    small_area_threshold_sqm: 80,
-    small_area_uplift_percent: 10,
-    small_area_uplift_cap_kwd: 150,
-    medium_project_range_sqm: [80, 300],
-    large_area_threshold_sqm: 300,
-    large_area_discount_kwd_per_sqm: 1.5,
-    very_large_area_threshold_sqm: 1000,
-    very_large_area_discount_kwd_per_sqm: 3.0,
-    package_effort_factor: {
-        A: 0.65,
-        B: 1.0,
-        C: 1.0
+'use strict';
+
+// ============================================
+// AUTHENTICATION & USER SESSION
+// ============================================
+
+const AuthManager = {
+    // Check if user is logged in, redirect to login page if not
+    checkAuth() {
+        const user = this.getUser();
+        if (!user) {
+            window.location.href = 'login.html';
+            return false;
+        }
+        return true;
     },
-    min_fee_by_package: {
-        A: 500,
-        B: 1000,
-        C: 400
-    },
-    complexity_levels: ["low", "typical", "high"],
-    complexity_additions_kwd: {
-        Standard: { low: 0, typical: 0, high: 0 },
-        Enhanced: { low: 400, typical: 400, high: 400 },
-        Specialized: { low: 1200, typical: 1200, high: 1200 }
-    },
-    rollout_adaptation_mode: "percent_of_site1_with_min",
-    rollout_adaptation_percent_of_site1: 25,
-    rollout_adaptation_min_kwd_per_site: 400,
-    add_ons: {
-        authority_approval_documentation: 600,
-        additional_renderings_per_view: 80,
-        full_mep_engineering_coordination: 1500
-    },
-    offer_validity_days: 14,
-    payment_terms: {
-        net_days: 30,
-        milestones: [
-            { label: "Start / Mobilization", percent: 30 },
-            { label: "Concept Approval", percent: 30 },
-            { label: "Tender Package Delivery", percent: 40 }
-        ]
-    },
-    assumptions: [
-        "Single floor unless stated otherwise",
-        "Client provides as-built drawings or landlord layout drawings",
-        "Client provides brand guidelines and operational requirements",
-        "Timely approvals and decision-making",
-        "Site access and surveys arranged by client"
-    ],
-    exclusions: [
-        "MEP engineering calculations and design",
-        "Structural engineering calculations",
-        "Permit fees and authority submission stamping",
-        "Full construction supervision unless added",
-        "Procurement and ordering unless added"
-    ],
-    revisions_out_of_scope_note:
-        "Additional options, scope changes, or changes after approval are treated as out-of-scope and may require a separate fee.",
-    next_steps: [
-        "Confirm scope and package selection",
-        "Provide site documents and brand guidelines",
-        "Schedule kickoff meeting"
-    ],
-    company_info: {
-        name: "Vertex Design Buildings General Contracting Co.",
-        address_lines: [
-            "Salmiya  Block 4",
-            "Salem Al-Mubarak Street",
-            "Tala Center (Tala Complex)",
-            "Mezzanine Floor, Office No. 6",
-            "Kuwait"
-        ],
-        contacts: {
-            tel: "+965 2571 2021",
-            mobile: "+965 9721 9663",
-            email: "info@VertexDesignkw.com"
+
+    // Get current user from session
+    getUser() {
+        try {
+            const userData = sessionStorage.getItem('vertex_user');
+            return userData ? JSON.parse(userData) : null;
+        } catch (e) {
+            return null;
         }
     },
-    timeline_by_package: {
-        A: {
-            typical_weeks_min: 1,
-            typical_weeks_max: 2,
-            label: "1-2 weeks (working)"
-        },
-        B: {
-            typical_weeks_min: 3,
-            typical_weeks_max: 5,
-            label: "3-5 weeks (working)"
-        },
-        C: {
-            typical_weeks_min: 4,
-            typical_weeks_max: 6,
-            label: "Prototype 4-6 weeks + adaptations 3-5 working days/site",
-            adaptation_days_min: 3,
-            adaptation_days_max: 5
+
+    // Get user's discount rate (0-1)
+    getDiscount() {
+        const user = this.getUser();
+        return user?.discount || 0;
+    },
+
+    // Check if user has discount
+    hasDiscount() {
+        return this.getDiscount() > 0;
+    },
+
+    // Get discount percentage for display
+    getDiscountPercent() {
+        return Math.round(this.getDiscount() * 100);
+    },
+
+    // Apply discount to amount
+    applyDiscount(amount) {
+        const discount = this.getDiscount();
+        return Math.round(amount * (1 - discount));
+    },
+
+    // Update UI with user info
+    updateUserUI() {
+        const user = this.getUser();
+        if (!user) return;
+
+        const userNameEl = document.getElementById('user-name');
+        const discountBadgeEl = document.getElementById('discount-badge');
+        const logoutBtn = document.getElementById('logout-btn');
+        const adminDiscountControl = document.getElementById('admin-discount-control');
+        const adminDiscountInput = document.getElementById('admin-discount-input');
+
+        if (userNameEl) {
+            userNameEl.textContent = user.displayName || 'Guest';
+        }
+
+        if (discountBadgeEl) {
+            if (user.discount > 0) {
+                discountBadgeEl.textContent = `${Math.round(user.discount * 100)}% OFF`;
+                discountBadgeEl.hidden = false;
+            } else {
+                discountBadgeEl.hidden = true;
+            }
+        }
+
+        // Show admin discount control for admin users
+        if (adminDiscountControl && this.isAdmin()) {
+            adminDiscountControl.hidden = false;
+
+            // Bind admin discount input event
+            if (adminDiscountInput) {
+                adminDiscountInput.addEventListener('change', () => {
+                    const discountPercent = Math.min(50, Math.max(0, parseInt(adminDiscountInput.value) || 0));
+                    adminDiscountInput.value = discountPercent;
+                    AppState.customDiscount = discountPercent / 100;
+
+                    // Update discount badge to show admin-set discount
+                    if (discountBadgeEl) {
+                        if (discountPercent > 0) {
+                            discountBadgeEl.textContent = `${discountPercent}% OFF`;
+                            discountBadgeEl.hidden = false;
+                        } else {
+                            discountBadgeEl.hidden = true;
+                        }
+                    }
+
+                    // Recalculate if quote exists
+                    updateSummaryPanel();
+                    if (typeof calculateQuote === 'function' && AppState.classification) {
+                        calculateQuote();
+                    }
+                });
+            }
+        }
+
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.logout());
         }
     },
-    package_details: {
-        A: {
-            title: "Package A - Concept Package",
-            purpose: "Brief summary, mood boards, preliminary layouts, initial palette, high-level budget.",
-            deliverables: [
-                "Design brief summary and scope alignment",
-                "Concept mood boards and direction",
-                "Preliminary layouts and zoning",
-                "Initial material palette",
-                "High-level budget guidance"
-            ],
-            revisions_included: 2,
-            typical_timeline_weeks: "1-2 weeks (working)",
-            stage_breakdown: [
-                "Stage 1: Discovery + Brief",
-                "Stage 2: Concept Direction",
-                "Stage 3: Preliminary Layouts",
-                "Stage 4: Palette + Key Decisions",
-                "Stage 5: Budget Alignment",
-                "Stage 6: Review + Revisions"
-            ]
-        },
-        B: {
-            title: "Package B - Full Design Development + Tender Set",
-            purpose:
-                "Detailed layouts, 3D views, specs, joinery, ceiling/lighting plans, tender-ready drawings, BOQ support notes.",
-            deliverables: [
-                "Detailed layouts and final GA",
-                "3D views (agreed quantity)",
-                "Material and finishes specifications",
-                "Joinery and millwork details",
-                "Ceiling and lighting plans",
-                "Tender-ready drawing package",
-                "BOQ support notes"
-            ],
-            revisions_included: 3,
-            typical_timeline_weeks: "3-5 weeks (working)",
-            stage_breakdown: [
-                "Stage 1: Discovery + Brief",
-                "Stage 2: Concept Direction",
-                "Stage 3: Space Planning",
-                "Stage 4: Design Development",
-                "Stage 5: Tender Package",
-                "Stage 6: Review + Close-out"
-            ]
-        },
-        C: {
-            title: "Package C - Rollout Kit",
-            purpose: "Master standards, adaptation templates, modular system, supplier specifications.",
-            deliverables: [
-                "Master standards and guidelines",
-                "Adaptation templates for new sites",
-                "Modular detailing system",
-                "Supplier specifications pack",
-                "Prototype site documentation"
-            ],
-            revisions_included: 2,
-            typical_timeline_weeks: "Prototype 4-6 weeks + adaptations 3-5 working days/site",
-            stage_breakdown: [
-                "Stage 1: Discovery + Brief",
-                "Stage 2: Concept Direction",
-                "Stage 3: Space Planning",
-                "Stage 4: Design Development",
-                "Stage 5: Rollout Standards",
-                "Stage 6: Adaptation Prep"
-            ]
-        }
+
+    // Logout and redirect to login
+    logout() {
+        sessionStorage.removeItem('vertex_user');
+        window.location.href = 'login.html';
+    },
+
+    // Check if user is admin
+    isAdmin() {
+        const user = this.getUser();
+        return user?.role === 'admin';
     }
 };
 
-const addOnLabels = {
-    authority_approval_documentation: "Authority approval documentation",
-    additional_renderings_per_view: "Additional renderings",
-    full_mep_engineering_coordination: "Full MEP engineering coordination"
+// ============================================
+// FALLBACK PRICING CONFIGURATION
+// ============================================
+
+const DEFAULT_CONFIG = {
+    version: "4.0.0",
+    currency: "KWD",
+    vat_rate: 0,
+    offer_validity_days: 14,
+
+    thresholds: {
+        size: {
+            small: { maxArea: 100, maxSpaces: 4 },
+            medium: { maxArea: 350, maxSpaces: 10 },
+            large: { maxArea: Infinity, maxSpaces: Infinity }
+        },
+        complexity: {
+            typeMap: {
+                retail: "normal",
+                office: "normal",
+                showroom: "normal",
+                fnb: "complex",
+                clinic: "complex",
+                salon: "normal",
+                gym: "normal",
+                hospital: "complex",
+                datacenter: "complex",
+                other: "normal"
+            }
+        },
+        scale: {
+            single: { maxSites: 1 },
+            multi: { maxSites: 5 },
+            rollout: { maxSites: Infinity }
+        }
+    },
+
+    multipliers: {
+        size: { small: 1.0, medium: 1.15, large: 1.3 },
+        complexity: { simple: 0.85, normal: 1.0, complex: 1.25 },
+        facade: { F0: 1.0, F1: 1.10, F2: 1.20, F3: 1.35 }
+    },
+
+    services: {
+        S1: { name: "Design Visualization", ratePerSqm: 3.5, minFee: 400, durationWeeks: 1.5 },
+        S2: { name: "Architectural Design Package", ratePerSqm: 6.0, minFee: 600, durationWeeks: 2.5 },
+        S3: { name: "MEP Design Package", ratePerSqm: 2.5, minFee: 350, durationWeeks: 1.5 },
+        S4: { name: "Material & Detail Specs", ratePerSqm: 2.0, minFee: 300, durationWeeks: 1.5 },
+        S5: { name: "Tender Documentation", ratePerSqm: 1.5, minFee: 250, durationWeeks: 1 },
+        S6: { name: "BOQ & Cost Documentation", ratePerSqm: 2.0, minFee: 300, durationWeeks: 1 },
+        SF1: { name: "Façade Design & Detailing", ratePerSqm: 3.0, minFee: 400, durationWeeks: 1.5 },
+        SF2: { name: "Signage & Branding Integration", ratePerSqm: 1.5, minFee: 250, durationWeeks: 1 }
+    },
+
+    addons: {
+        extra_renders: { price: 80, unit: "per view" },
+        extra_revisions: { price: 150, unit: "per round" },
+        authority_submission: { price: 600, unit: "flat" },
+        site_visits: { price: 50, unit: "per visit" },
+        fast_track: { percent: 15 }
+    },
+
+    // Package definitions - ALIGNED TO CONFIG A/B/C
+    packages: {
+        A: {
+            name: "Package A – Concept",
+            description: "Brief, layouts, concept design and budget estimate.",
+            services: ["S1", "S2"]
+        },
+        B: {
+            name: "Package B – Full Design",
+            description: "Full design development with tender-ready drawings, specs, and coordination.",
+            services: ["S1", "S2", "S3", "S4", "S5"]
+        },
+        C: {
+            name: "Package C – Rollout Kit",
+            description: "Standardized design kit for multi-location deployments.",
+            services: ["S1", "S2", "S3", "S4", "S5", "S6"]
+        },
+        custom: {
+            name: "⭐ Customize Your Package (Recommended)",
+            description: "Select individual services below to create a custom scope.",
+            services: null
+        }
+    },
+
+    rollout: {
+        adaptationPercent: { new: 100, adapted: 40, replica: 15 },
+        minPerSite: 300
+    },
+
+    revisions: {
+        included: 2,
+        note: "Additional revisions available at additional cost."
+    },
+
+    paymentTerms: {
+        milestones: [
+            { label: "Upon signing", percent: 50 },
+            { label: "Design approval", percent: 30 },
+            { label: "Final delivery", percent: 20 }
+        ],
+        netDays: 7
+    },
+
+    assumptions: [
+        "Client provides base drawings or survey measurement",
+        "Project information provided at kickoff",
+        "Timely feedback (within 5 working days)",
+        "Standard construction methods applicable"
+    ],
+
+    exclusions: [
+        "Site surveys and measurements",
+        "Municipality/authority approvals",
+        "Structural engineering calculations",
+        "Specialty consultant fees",
+        "Construction/project management"
+    ],
+
+    company: {
+        name: "Vertex Design Buildings General Contracting Co.",
+        address: "Salmiya Block 4, Salem Al-Mubarak Street, Tala Center, Mezzanine Floor, Office 6, Kuwait",
+        tel: "+965 2571 2021",
+        mobile: "+965 9721 9663",
+        email: "info@VertexDesignkw.com"
+    }
 };
 
-let pricingConfig = DEFAULT_CONFIG;
-let currentOfferMode = "formal";
-let cachedElements = {};
-let lastCalculation = null;
+// ============================================
+// GLOBAL STATE
+// ============================================
 
-document.addEventListener("DOMContentLoaded", () => {
+let CONFIG = { ...DEFAULT_CONFIG };
+
+const AppState = {
+    currentStep: 1,
+    classification: null,
+    quote: null,
+    quoteHistory: [],
+    configLoaded: false,
+    elements: {}
+};
+
+// ============================================
+// CONFIG LOADER
+// ============================================
+
+async function loadConfig() {
+    try {
+        const response = await fetch('assets/config.json');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const externalConfig = await response.json();
+
+        // Merge external config with defaults (external takes precedence)
+        CONFIG = mergeConfig(DEFAULT_CONFIG, externalConfig);
+        AppState.configLoaded = true;
+
+        console.log(`Config loaded: v${CONFIG.version}`);
+        hideConfigWarning();
+
+    } catch (error) {
+        console.warn('External config not loaded, using defaults:', error.message);
+        showConfigWarning('Using default configuration. External config.json could not be loaded.');
+    }
+}
+
+function mergeConfig(defaults, external) {
+    const merged = { ...defaults };
+
+    for (const key in external) {
+        if (external.hasOwnProperty(key)) {
+            if (typeof external[key] === 'object' && !Array.isArray(external[key]) && external[key] !== null) {
+                merged[key] = mergeConfig(defaults[key] || {}, external[key]);
+            } else {
+                merged[key] = external[key];
+            }
+        }
+    }
+
+    return merged;
+}
+
+function showConfigWarning(message) {
+    const banner = document.getElementById('config-warning');
+    if (banner) {
+        banner.textContent = message;
+        banner.hidden = false;
+    }
+}
+
+function hideConfigWarning() {
+    const banner = document.getElementById('config-warning');
+    if (banner) {
+        banner.hidden = true;
+    }
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+
+document.addEventListener("DOMContentLoaded", async () => {
+    // Check authentication first
+    if (!AuthManager.checkAuth()) return;
+
+    // Update user UI (name, discount badge, logout)
+    AuthManager.updateUserUI();
+
     cacheElements();
-    loadConfigAndInit();
+    await loadConfig();
+    loadQuoteHistory();
+    bindEvents();
+    setOfferDate();
+    generateQuoteId();
+    updateFacadeVisibility();
+    updateReuseVisibility();
+    updateSpecialSystems();
+    applyPackage("B"); // Default to Package B
+    updateSummaryPanel();
 });
 
 function cacheElements() {
-    cachedElements = {
+    AppState.elements = {
         form: document.getElementById("pricing-form"),
         feedback: document.getElementById("form-feedback"),
+        wizardSteps: document.querySelectorAll(".wizard-step"),
+        formSteps: document.querySelectorAll(".form-step"),
+        facadeDetails: document.getElementById("facade-details"),
+        facadeServices: document.getElementById("facade-services"),
+        reuseLabel: document.getElementById("reuse-label"),
         offerOutput: document.getElementById("offer-output"),
         offerText: document.getElementById("offer-text"),
-        copyOfferBtn: document.getElementById("copy-offer"),
-        printOfferBtn: document.getElementById("print-offer"),
-        offerDate: document.getElementById("offer-date"),
-        quoteId: document.getElementById("quote-id"),
-        configWarning: document.getElementById("config-warning"),
-        offerModeRadios: document.querySelectorAll("input[name='offerMode']"),
-        packageTitle: document.getElementById("package-title"),
-        packagePurpose: document.getElementById("package-purpose"),
-        packageDeliverables: document.getElementById("package-deliverables"),
-        packageRevisions: document.getElementById("package-revisions"),
-        packageTimeline: document.getElementById("package-timeline"),
-        packageStages: document.getElementById("package-stages"),
-        // Print header elements
-        printQuoteId: document.getElementById("print-quote-id"),
-        printDate: document.getElementById("print-date")
+        quoteHistory: document.getElementById("quote-history"),
+        tooltipContainer: document.getElementById("tooltip-container"),
+        specialSystemsGroup: document.getElementById("special-systems-group"),
+        packageType: document.getElementById("package-type"),
+        packageDescription: document.getElementById("package-description"),
+        floatingAmount: document.getElementById("floating-amount"),
+        floatingTotal: document.getElementById("floating-total"),
+        // Sticky summary panel
+        summaryTotal: document.getElementById("summary-total"),
+        summaryTimeline: document.getElementById("summary-timeline"),
+        summaryPackage: document.getElementById("summary-package"),
+        summarySize: document.getElementById("summary-size"),
+        summaryComplexity: document.getElementById("summary-complexity"),
+        summaryServices: document.getElementById("summary-services"),
+        summaryCta: document.getElementById("summary-cta-btn"),
+        summaryCard: document.getElementById("summary-card"),
+        // Floating action bar for proposal page
+        proposalFloatingBar: document.getElementById("proposal-floating-bar")
     };
 }
 
-async function loadConfigAndInit() {
-    const result = await loadConfig();
-    pricingConfig = mergeConfig(DEFAULT_CONFIG, result.config);
-    setConfigWarning(result.warning);
-    initializeApp();
-}
+function bindEvents() {
+    const { form } = AppState.elements;
+    if (!form) return;
 
-async function loadConfig() {
-    const primary = await fetchConfig("./assets/config.json");
-    if (primary.ok) {
-        return { config: primary.config, warning: null };
-    }
-
-    const fallback = await fetchConfig("./assets/config.example.json");
-    if (fallback.ok) {
-        const warning = buildWarning(primary.error, true);
-        return { config: fallback.config, warning };
-    }
-
-    const warning = buildWarning(`${primary.error}; ${fallback.error}`, false);
-    return { config: DEFAULT_CONFIG, warning };
-}
-
-async function fetchConfig(path) {
-    try {
-        const response = await fetch(path, { cache: "no-store" });
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        return { ok: true, config: await response.json() };
-    } catch (error) {
-        return { ok: false, error: error?.message || "Unknown error" };
-    }
-}
-
-function buildWarning(reason, usedExample) {
-    const modeNote = window.location.protocol === "file:"
-        ? " Local file mode can block config loading. Use a local server or host on your domain."
-        : "";
-    if (usedExample) {
-        return `Config load failed: ${reason}. Using config.example.json as a read-only fallback.${modeNote}`;
-    }
-    return `Config load failed: ${reason}. Using embedded defaults.${modeNote}`;
-}
-
-function mergeConfig(defaults, overrides) {
-    if (Array.isArray(defaults)) {
-        return Array.isArray(overrides) ? overrides : defaults;
-    }
-    if (typeof defaults !== "object" || defaults === null) {
-        return overrides !== undefined ? overrides : defaults;
-    }
-    const result = { ...defaults };
-    Object.keys(overrides || {}).forEach((key) => {
-        result[key] = mergeConfig(defaults[key], overrides[key]);
+    // Navigation
+    document.querySelectorAll("[data-next]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const next = parseInt(btn.dataset.next, 10);
+            if (validateStep(AppState.currentStep)) {
+                if (next === 2) updateClassification();
+                if (next === 3) updateServicePrices();
+                if (next === 4) calculateQuote();
+                if (next === 5) generateProposal();
+                goToStep(next);
+            }
+        });
     });
-    return result;
+
+    document.querySelectorAll("[data-prev]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            goToStep(parseInt(btn.dataset.prev, 10));
+        });
+    });
+
+    // Summary CTA button
+    AppState.elements.summaryCta?.addEventListener("click", () => {
+        const next = AppState.currentStep + 1;
+        if (next <= 5 && validateStep(AppState.currentStep)) {
+            if (next === 2) updateClassification();
+            if (next === 3) updateServicePrices();
+            if (next === 4) calculateQuote();
+            if (next === 5) generateProposal();
+            goToStep(next);
+        }
+    });
+
+    // Façade type toggle
+    form.querySelectorAll("input[name='facadeType']").forEach(radio => {
+        radio.addEventListener("change", () => {
+            updateFacadeVisibility();
+            updateSummaryPanel();
+        });
+    });
+
+    // Sites count toggle for reuse
+    const sitesInput = form.elements["sites"];
+    sitesInput?.addEventListener("input", () => {
+        updateReuseVisibility();
+        updateSummaryPanel();
+    });
+
+    // Area input change
+    form.elements["area"]?.addEventListener("input", debounce(() => {
+        updateSummaryPanel();
+    }, 300));
+
+    // Spaces input change
+    form.elements["spaces"]?.addEventListener("input", debounce(() => {
+        updateSummaryPanel();
+    }, 300));
+
+    // Override acknowledge
+    const overrideAck = document.getElementById("override-acknowledge");
+    overrideAck?.addEventListener("change", (e) => {
+        const fields = document.getElementById("override-fields");
+        if (fields) fields.hidden = !e.target.checked;
+    });
+
+    // Package dropdown
+    AppState.elements.packageType?.addEventListener("change", (e) => {
+        applyPackage(e.target.value);
+    });
+
+    // Project type change - update special systems
+    form.elements["projectType"]?.addEventListener("change", () => {
+        updateSpecialSystems();
+        updateSummaryPanel();
+    });
+
+    // Addon quantity toggles
+    form.querySelectorAll("input[name='addons']").forEach(checkbox => {
+        checkbox.addEventListener("change", () => {
+            const qtyInput = checkbox.closest("label")?.querySelector(".addon-qty");
+            if (qtyInput) {
+                qtyInput.disabled = !checkbox.checked;
+                if (checkbox.checked && parseInt(qtyInput.value) === 0) {
+                    qtyInput.value = 1;
+                }
+            }
+            updateFloatingTotal();
+            updateSummaryPanel();
+        });
+    });
+
+    // Addon quantity input changes
+    form.querySelectorAll(".addon-qty").forEach(input => {
+        input.addEventListener("input", debounce(() => {
+            updateFloatingTotal();
+            updateSummaryPanel();
+        }, 200));
+    });
+
+    // Service checkboxes update pricing and floating total
+    const serviceCheckboxes = form.querySelectorAll("input[name='services']");
+    console.log('[DEBUG] Found', serviceCheckboxes.length, 'service checkboxes');
+    serviceCheckboxes.forEach(cb => {
+        cb.addEventListener("change", () => {
+            console.log('[DEBUG] Service checkbox changed:', cb.value, 'checked:', cb.checked);
+            updateServicePrices();
+            updateFloatingTotal();
+            updateSummaryPanel();
+        });
+    });
+
+    // Action buttons
+    document.getElementById("download-pdf")?.addEventListener("click", downloadPdf);
+    document.getElementById("print-offer")?.addEventListener("click", () => window.print());
+    document.getElementById("copy-offer")?.addEventListener("click", copyOfferText);
+    document.getElementById("save-quote")?.addEventListener("click", saveQuote);
+    document.getElementById("new-quote")?.addEventListener("click", resetForm);
+
+    // Tooltips
+    document.querySelectorAll(".tooltip-trigger").forEach(trigger => {
+        trigger.addEventListener("mouseenter", showTooltip);
+        trigger.addEventListener("focus", showTooltip);
+        trigger.addEventListener("mouseleave", hideTooltip);
+        trigger.addEventListener("blur", hideTooltip);
+    });
 }
 
-function setConfigWarning(message) {
-    if (!cachedElements.configWarning) return;
-    if (message) {
-        cachedElements.configWarning.textContent = message;
-        cachedElements.configWarning.hidden = false;
+// ============================================
+// WIZARD NAVIGATION
+// ============================================
+
+function goToStep(step) {
+    AppState.currentStep = step;
+
+    AppState.elements.wizardSteps?.forEach(ws => {
+        const stepNum = parseInt(ws.dataset.step, 10);
+        ws.classList.toggle("active", stepNum === step);
+        ws.classList.toggle("completed", stepNum < step);
+    });
+
+    AppState.elements.formSteps?.forEach(fs => {
+        fs.classList.toggle("active", fs.id === `step-${step}`);
+    });
+
+    // Show/hide floating total (only on step 3)
+    if (AppState.elements.floatingTotal) {
+        AppState.elements.floatingTotal.style.display = step === 3 ? "block" : "none";
+    }
+
+    // Show/hide summary card (only on step 3 and 4)
+    if (AppState.elements.summaryCard) {
+        AppState.elements.summaryCard.hidden = step < 3 || step > 4;
+    }
+
+    // Show/hide floating action bar (only on step 5)
+    if (AppState.elements.proposalFloatingBar) {
+        AppState.elements.proposalFloatingBar.classList.toggle("visible", step === 5);
+    }
+
+    // Update summary CTA button text
+    updateSummaryCta(step);
+
+    // Focus first input
+    const activeStep = document.getElementById(`step-${step}`);
+    const firstInput = activeStep?.querySelector("input:not([type='hidden']):not([type='checkbox']):not([type='radio']), select");
+    if (firstInput) setTimeout(() => firstInput.focus(), 100);
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function updateSummaryCta(step) {
+    const btn = AppState.elements.summaryCta;
+    if (!btn) return;
+
+    const labels = {
+        1: "Continue to Classification",
+        2: "Select Services",
+        3: "View Quote",
+        4: "Generate Proposal",
+        5: "Complete"
+    };
+
+    btn.textContent = labels[step] || "Continue";
+    btn.disabled = step >= 5;
+}
+
+function validateStep(step) {
+    showFeedback("", false);
+    const form = AppState.elements.form;
+    if (!form) return false;
+
+    if (step === 1) {
+        const area = sanitize(form.elements["area"]?.value, 10, 50000);
+        const spaces = sanitize(form.elements["spaces"]?.value, 1, 100);
+        const projectType = form.elements["projectType"]?.value;
+
+        if (area < 10) {
+            showFeedback("Please enter a valid area (minimum 10 sqm).", true);
+            form.elements["area"]?.focus();
+            return false;
+        }
+        if (spaces < 1) {
+            showFeedback("Please enter at least 1 space.", true);
+            form.elements["spaces"]?.focus();
+            return false;
+        }
+        if (!projectType) {
+            showFeedback("Please select a project type.", true);
+            form.elements["projectType"]?.focus();
+            return false;
+        }
+    }
+
+    if (step === 3) {
+        const services = getSelectedServices();
+        if (services.length === 0) {
+            showFeedback("Please select at least one service.", true);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// ============================================
+// CLASSIFICATION ENGINE
+// ============================================
+
+function updateClassification() {
+    const form = AppState.elements.form;
+    if (!form) return;
+
+    const data = getFormData();
+    const classification = deriveClassification(data);
+    AppState.classification = classification;
+
+    updateClassificationUI(classification);
+    updateSummaryPanel();
+}
+
+function deriveClassification(data) {
+    const th = CONFIG.thresholds;
+
+    // SIZE
+    let sizeClass = "large";
+    let sizeReason = `${data.area} sqm + ${data.spaces} spaces`;
+    if (data.area <= th.size.small.maxArea && data.spaces <= th.size.small.maxSpaces) {
+        sizeClass = "small";
+        sizeReason += " → Small";
+    } else if (data.area <= th.size.medium.maxArea && data.spaces <= th.size.medium.maxSpaces) {
+        sizeClass = "medium";
+        sizeReason += " → Medium";
+    } else {
+        sizeReason += " → Large";
+    }
+
+    // COMPLEXITY
+    const baseComplexity = th.complexity.typeMap[data.projectType] || "normal";
+    const systemCount = data.specialSystems.length;
+    let complexityClass = baseComplexity;
+    let complexityReason = `${capitalize(data.projectType)}`;
+
+    if (baseComplexity === "normal" && systemCount >= 2) {
+        complexityClass = "complex";
+        complexityReason += ` + ${systemCount} special systems → Complex`;
+    } else if (baseComplexity === "complex") {
+        complexityReason += " (inherently complex)";
+    } else if (systemCount > 0) {
+        complexityReason += ` + ${systemCount} system(s)`;
+    }
+
+    // Allow simple only for basic retail/office with no systems
+    if (baseComplexity === "normal" && systemCount === 0 && data.area < 100) {
+        complexityClass = "simple";
+        complexityReason = `Basic ${data.projectType}, small area → Simple`;
+    }
+
+    // SCALE
+    let scaleClass = "single";
+    let scaleReason = `${data.sites} site(s)`;
+    if (data.sites > th.scale.multi.maxSites) {
+        scaleClass = "rollout";
+        scaleReason += " → Rollout";
+    } else if (data.sites > th.scale.single.maxSites) {
+        scaleClass = "multi";
+        scaleReason += " → Multi-site";
+    } else {
+        scaleReason += " → Single";
+    }
+
+    // FAÇADE
+    const facadeMap = { none: "F0", frontage: "F1", enhanced: "F2", full: "F3" };
+    const facadeType = data.facadeType || "none";
+    const facadeClass = facadeMap[facadeType] || "F0";
+    const facadeLabels = { F0: "Interior Only", F1: "Mall Frontage", F2: "Enhanced", F3: "Full Façade" };
+    const facadeReason = facadeLabels[facadeClass];
+
+    return {
+        size: { value: sizeClass, reason: sizeReason },
+        complexity: { value: complexityClass, reason: complexityReason },
+        scale: { value: scaleClass, reason: scaleReason },
+        facade: { value: facadeClass, reason: facadeReason }
+    };
+}
+
+function updateClassificationUI(c) {
+    document.getElementById("derived-size").textContent = capitalize(c.size.value);
+    document.getElementById("reason-size").textContent = c.size.reason;
+
+    document.getElementById("derived-complexity").textContent = capitalize(c.complexity.value);
+    document.getElementById("reason-complexity").textContent = c.complexity.reason;
+
+    document.getElementById("derived-scale").textContent = capitalize(c.scale.value);
+    document.getElementById("reason-scale").textContent = c.scale.reason;
+
+    document.getElementById("derived-facade").textContent = c.facade.value;
+    document.getElementById("reason-facade").textContent = c.facade.reason;
+}
+
+// ============================================
+// SERVICE PRICING ENGINE
+// ============================================
+
+function updateServicePrices() {
+    if (!AppState.classification) updateClassification();
+
+    const data = getFormData();
+    const c = AppState.classification;
+    const mult = CONFIG.multipliers;
+
+    // Complexity multiplier (still based on project type)
+    const complexMult = mult.complexity[c.complexity.value] || 1;
+
+    // Façade multiplier applies only to façade services
+    const facadeMult = mult.facade[c.facade.value] || 1;
+
+    document.querySelectorAll(".service-price").forEach(el => {
+        const serviceId = el.dataset.service;
+        const service = CONFIG.services[serviceId];
+        if (!service) return;
+
+        // Use the new calculateServiceFee function
+        let subtotal = calculateServiceFee(serviceId, data.area, complexMult);
+
+        // Apply façade multiplier for façade services
+        if (serviceId.startsWith("SF")) {
+            subtotal = Math.round(subtotal * facadeMult);
+        }
+
+        el.textContent = formatCurrency(subtotal);
+    });
+
+    // Show/hide façade services
+    const facadeServices = AppState.elements.facadeServices;
+    if (facadeServices) {
+        facadeServices.hidden = c.facade.value === "F0";
+    }
+}
+
+function getTierMultiplier(area) {
+    // Tiered rate multipliers - economies of scale
+    // Smaller projects pay premium, larger projects get volume discount
+    if (area <= 100) return 1.15;      // Small project premium
+    if (area <= 300) return 1.0;       // Standard rate
+    if (area <= 600) return 0.92;      // Volume discount
+    if (area <= 1000) return 0.85;     // Scale efficiency
+    return 0.78;                        // Major project discount
+}
+
+function calculateServiceFee(serviceId, area, complexityMult) {
+    const service = CONFIG.services[serviceId];
+    if (!service) return 0;
+
+    const tierMult = getTierMultiplier(area);
+
+    // Calculate area-based fee: area × rate × tier × complexity
+    const areaFee = area * service.ratePerSqm * tierMult * complexityMult;
+
+    // Apply minimum fee guarantee
+    return Math.round(Math.max(areaFee, service.minFee));
+}
+
+// ============================================
+// QUOTE CALCULATION
+// ============================================
+
+function calculateQuote() {
+    const data = getFormData();
+    const c = AppState.classification;
+    if (!c) updateClassification();
+
+    const mult = CONFIG.multipliers;
+    const complexMult = mult.complexity[c.complexity.value] || 1;
+    const facadeMult = mult.facade[c.facade.value] || 1;
+
+    // Services - now using area-based calculation
+    const selectedServices = getSelectedServices();
+    const servicesBreakdown = selectedServices.map(id => {
+        const s = CONFIG.services[id];
+        let subtotal = calculateServiceFee(id, data.area, complexMult);
+
+        // Apply façade multiplier for façade services
+        if (id.startsWith("SF")) {
+            subtotal = Math.round(subtotal * facadeMult);
+        }
+
+        return {
+            id,
+            name: s.name,
+            ratePerSqm: s.ratePerSqm,
+            area: data.area,
+            subtotal,
+            duration: s.durationWeeks
+        };
+    });
+    const servicesTotal = servicesBreakdown.reduce((sum, s) => sum + s.subtotal, 0);
+
+    // Addons
+    const addonsBreakdown = [];
+    let addonsTotal = 0;
+
+    const addonChecks = AppState.elements.form.querySelectorAll("input[name='addons']:checked");
+    addonChecks.forEach(cb => {
+        const key = cb.value;
+        const addon = CONFIG.addons[key];
+        if (!addon) return;
+
+        if (key === "extra_renders") {
+            const qty = sanitize(AppState.elements.form.elements["extraRenderCount"]?.value, 0, 20);
+            const subtotal = addon.price * qty;
+            addonsBreakdown.push({ name: "Additional renders", qty, price: addon.price, subtotal });
+            addonsTotal += subtotal;
+        } else if (key === "extra_revisions") {
+            const qty = sanitize(AppState.elements.form.elements["extraRevisionCount"]?.value, 0, 10);
+            const subtotal = addon.price * qty;
+            addonsBreakdown.push({ name: "Extra revision rounds", qty, price: addon.price, subtotal });
+            addonsTotal += subtotal;
+        } else if (key === "authority_submission") {
+            addonsBreakdown.push({ name: "Authority submission set", qty: 1, price: addon.price, subtotal: addon.price });
+            addonsTotal += addon.price;
+        } else if (key === "site_visits") {
+            const qty = sanitize(AppState.elements.form.elements["siteVisitCount"]?.value, 0, 20);
+            const subtotal = addon.price * qty;
+            addonsBreakdown.push({ name: "Extra site visits", qty, price: addon.price, subtotal });
+            addonsTotal += subtotal;
+        }
+    });
+
+    // Fast-track
+    const fastTrack = AppState.elements.form.querySelector("input[name='addons'][value='fast_track']")?.checked;
+    let fastTrackAmount = 0;
+    if (fastTrack) {
+        fastTrackAmount = Math.round((servicesTotal + addonsTotal) * 0.15);
+        addonsBreakdown.push({ name: "Fast-track delivery", qty: 1, price: "15%", subtotal: fastTrackAmount });
+        addonsTotal += fastTrackAmount;
+    }
+
+    // Rollout
+    let rolloutTotal = 0;
+    let rolloutBreakdown = null;
+    if (data.sites > 1) {
+        const reuseLevel = data.reuseLevel;
+        const adaptPct = CONFIG.rollout.adaptationPercent[reuseLevel] || 40;
+        const minPerSite = CONFIG.rollout.minPerSite;
+        const additionalSites = data.sites - 1;
+        const perSiteFee = Math.max(minPerSite, Math.round(servicesTotal * (adaptPct / 100)));
+        rolloutTotal = perSiteFee * additionalSites;
+        rolloutBreakdown = {
+            additionalSites,
+            reuseLevel,
+            adaptPct,
+            perSiteFee,
+            total: rolloutTotal
+        };
+    }
+
+    // Totals (before discount)
+    const subtotal = servicesTotal + addonsTotal + rolloutTotal;
+    const vatRate = CONFIG.vat_rate;
+    const vatAmount = vatRate > 0 ? Math.round(subtotal * (vatRate / 100)) : 0;
+    const beforeDiscount = subtotal + vatAmount;
+
+    // Apply discount (user auto-discount or admin custom discount)
+    const discountRate = AppState.customDiscount !== undefined ? AppState.customDiscount : AuthManager.getDiscount();
+    const discountPercent = Math.round(discountRate * 100);
+    const discountAmount = discountRate > 0 ? Math.round(beforeDiscount * discountRate) : 0;
+    const grandTotal = beforeDiscount - discountAmount;
+
+    // Timeline
+    const timeline = calculateTimeline(servicesBreakdown, fastTrack);
+
+    AppState.quote = {
+        data,
+        classification: c,
+        services: servicesBreakdown,
+        servicesTotal,
+        addons: addonsBreakdown,
+        addonsTotal,
+        rollout: rolloutBreakdown,
+        rolloutTotal,
+        subtotal,
+        vatRate,
+        vatAmount,
+        beforeDiscount,
+        discountRate,
+        discountPercent,
+        discountAmount,
+        grandTotal,
+        timeline,
+        quoteId: document.getElementById("quote-id")?.textContent || generateQuoteId(),
+        date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    };
+
+    renderQuoteBreakdown(AppState.quote);
+    updateSummaryPanel();
+}
+
+// ============================================
+// TIMELINE ENGINE
+// ============================================
+
+function calculateTimeline(services, fastTrack) {
+    const overlapFactor = 0.65;
+    let totalWeeks = 0;
+
+    services.forEach((s, i) => {
+        if (i === 0) {
+            totalWeeks = s.duration;
+        } else {
+            totalWeeks += s.duration * overlapFactor;
+        }
+    });
+
+    if (fastTrack) {
+        totalWeeks *= 0.75;
+    }
+
+    const minWeeks = Math.ceil(totalWeeks);
+    const maxWeeks = Math.ceil(totalWeeks * 1.3);
+
+    return {
+        minWeeks,
+        maxWeeks,
+        label: `${minWeeks}-${maxWeeks} weeks`,
+        note: "Timeline depends on timely approvals and feedback."
+    };
+}
+
+// ============================================
+// RENDER QUOTE BREAKDOWN
+// ============================================
+
+function renderQuoteBreakdown(quote) {
+    // Header
+    document.getElementById("quote-total").textContent = formatCurrency(quote.grandTotal);
+    document.getElementById("quote-timeline").textContent = `Timeline: ${quote.timeline.label}`;
+
+    // Services table
+    const tbody = document.querySelector("#services-breakdown tbody");
+    if (tbody) {
+        tbody.innerHTML = quote.services.map(s => `
+            <tr>
+                <td>${escapeHtml(s.name)}</td>
+                <td>${s.ratePerSqm ? `${s.ratePerSqm} KWD/sqm` : '-'}</td>
+                <td>${s.area ? `${s.area} sqm` : '-'}</td>
+                <td>${formatCurrency(s.subtotal)}</td>
+            </tr>
+        `).join("");
+    }
+
+    // Addons
+    const addonsList = document.getElementById("addons-breakdown");
+    const addonsSection = document.getElementById("addons-breakdown-section");
+    if (addonsList && addonsSection) {
+        if (quote.addons.length > 0) {
+            addonsSection.hidden = false;
+            addonsList.innerHTML = quote.addons.map(a => `
+                <li><span>${escapeHtml(a.name)} ${a.qty > 1 ? `(×${a.qty})` : ''}</span><span>${formatCurrency(a.subtotal)}</span></li>
+            `).join("");
+        } else {
+            addonsSection.hidden = true;
+        }
+    }
+
+    // Rollout
+    const rolloutSection = document.getElementById("rollout-breakdown-section");
+    const rolloutP = document.getElementById("rollout-breakdown");
+    if (rolloutSection && rolloutP) {
+        if (quote.rollout) {
+            rolloutSection.hidden = false;
+            rolloutP.innerHTML = `${quote.rollout.additionalSites} additional site(s) @ ${formatCurrency(quote.rollout.perSiteFee)}/site (${quote.rollout.adaptPct}% adaptation) = <strong>${formatCurrency(quote.rollout.total)}</strong>`;
+        } else {
+            rolloutSection.hidden = true;
+        }
+    }
+
+    // Summary
+    document.getElementById("subtotal-services").textContent = formatCurrency(quote.servicesTotal);
+    document.getElementById("subtotal-addons").textContent = formatCurrency(quote.addonsTotal);
+    document.getElementById("subtotal-rollout").textContent = formatCurrency(quote.rolloutTotal);
+    document.getElementById("total-before-vat").textContent = formatCurrency(quote.subtotal);
+
+    const vatRow = document.getElementById("vat-row");
+    if (vatRow) {
+        if (quote.vatRate > 0) {
+            vatRow.hidden = false;
+            document.getElementById("vat-rate").textContent = quote.vatRate;
+            document.getElementById("vat-amount").textContent = formatCurrency(quote.vatAmount);
+        } else {
+            vatRow.hidden = true;
+        }
+    }
+
+    // Discount row
+    const discountRow = document.getElementById("discount-row");
+    if (discountRow) {
+        if (quote.discountAmount > 0) {
+            discountRow.hidden = false;
+            discountRow.innerHTML = `
+                <td colspan="3"><strong>Discount (${quote.discountPercent}%)</strong></td>
+                <td class="discount-applied">- ${formatCurrency(quote.discountAmount)}</td>
+            `;
+        } else {
+            discountRow.hidden = true;
+        }
+    }
+
+    // Grand total - show original if discount applied
+    const grandTotalEl = document.getElementById("grand-total");
+    if (grandTotalEl) {
+        if (quote.discountAmount > 0) {
+            grandTotalEl.innerHTML = `
+                <span class="discount-original">${formatCurrency(quote.beforeDiscount)}</span>
+                <span class="discount-applied">${formatCurrency(quote.grandTotal)}</span>
+            `;
+        } else {
+            grandTotalEl.textContent = formatCurrency(quote.grandTotal);
+        }
+    }
+
+    // Pricing explanation
+    renderPricingExplanation(quote);
+}
+
+function renderPricingExplanation(quote) {
+    const c = quote.classification;
+    const html = `
+        <p><strong>Classification Applied:</strong></p>
+        <ul>
+            <li><strong>Size:</strong> ${capitalize(c.size.value)} — ${c.size.reason}</li>
+            <li><strong>Complexity:</strong> ${capitalize(c.complexity.value)} — ${c.complexity.reason}</li>
+            <li><strong>Scale:</strong> ${capitalize(c.scale.value)} — ${c.scale.reason}</li>
+            <li><strong>Façade:</strong> ${c.facade.value} — ${c.facade.reason}</li>
+        </ul>
+        <p><strong>Multipliers:</strong> Size ×${CONFIG.multipliers.size[c.size.value]}, Complexity ×${CONFIG.multipliers.complexity[c.complexity.value]}, Façade ×${CONFIG.multipliers.facade[c.facade.value]}</p>
+        <p><strong>Timeline:</strong> ${quote.timeline.note}</p>
+        <p><strong>Revisions:</strong> ${CONFIG.revisions.included} rounds included. ${CONFIG.revisions.note}</p>
+    `;
+    document.getElementById("pricing-explanation").innerHTML = html;
+}
+
+// ============================================
+// GENERATE PROPOSAL
+// ============================================
+
+function generateProposal() {
+    if (!AppState.quote) calculateQuote();
+    const q = AppState.quote;
+    const cfg = CONFIG;
+
+    const selectedServiceNames = q.services.map(s => s.name);
+    const excludedServices = Object.values(cfg.services)
+        .filter(s => !selectedServiceNames.includes(s.name))
+        .map(s => s.name);
+
+    const html = `
+        <div class="proposal-content">
+            <h2>Design Services Proposal</h2>
+            <p class="proposal-meta">Quote ID: <strong>${escapeHtml(q.quoteId)}</strong> | Date: ${escapeHtml(q.date)} | Valid for ${cfg.offer_validity_days} days</p>
+            
+            <div class="proposal-section">
+                <h3>Client</h3>
+                <p><strong>${escapeHtml(q.data.clientName || 'To be confirmed')}</strong></p>
+                <p>Project: ${escapeHtml(q.data.projectName || '-')}</p>
+                <p>Location: ${escapeHtml(q.data.location || '-')}</p>
+            </div>
+
+            <div class="proposal-section">
+                <h3>Project Classification</h3>
+                <table class="proposal-table">
+                    <tr><td>Area</td><td>${q.data.area} sqm (${q.data.spaces} spaces)</td></tr>
+                    <tr><td>Type</td><td>${capitalize(q.data.projectType)}</td></tr>
+                    <tr><td>Size</td><td>${capitalize(q.classification.size.value)}</td></tr>
+                    <tr><td>Complexity</td><td>${capitalize(q.classification.complexity.value)}</td></tr>
+                    <tr><td>Scale</td><td>${capitalize(q.classification.scale.value)} (${q.data.sites} site${q.data.sites > 1 ? 's' : ''})</td></tr>
+                    <tr><td>Façade</td><td>${q.classification.facade.value} - ${q.classification.facade.reason}</td></tr>
+                </table>
+            </div>
+
+            <div class="proposal-section">
+                <h3>Selected Services</h3>
+                <ul>
+                    ${q.services.map(s => `<li>${escapeHtml(s.name)} — ${formatCurrency(s.subtotal)}</li>`).join('')}
+                </ul>
+            </div>
+
+            ${excludedServices.length > 0 ? `
+            <div class="proposal-section">
+                <h3>Excluded from Scope</h3>
+                <ul>
+                    ${excludedServices.map(n => `<li>${escapeHtml(n)}</li>`).join('')}
+                </ul>
+            </div>
+            ` : ''}
+
+            ${q.addons.length > 0 ? `
+            <div class="proposal-section">
+                <h3>Add-ons</h3>
+                <ul>
+                    ${q.addons.map(a => `<li>${escapeHtml(a.name)} ${a.qty > 1 ? `(×${a.qty})` : ''} — ${formatCurrency(a.subtotal)}</li>`).join('')}
+                </ul>
+            </div>
+            ` : ''}
+
+            ${q.rollout ? `
+            <div class="proposal-section">
+                <h3>Rollout Adaptation</h3>
+                <p>${q.rollout.additionalSites} additional site(s) at ${q.rollout.adaptPct}% effort = ${formatCurrency(q.rollout.total)}</p>
+            </div>
+            ` : ''}
+
+            <div class="proposal-section proposal-total">
+                <h3>Total Fee</h3>
+                <table class="proposal-table">
+                    <tr><td>Services</td><td>${formatCurrency(q.servicesTotal)}</td></tr>
+                    <tr><td>Add-ons</td><td>${formatCurrency(q.addonsTotal)}</td></tr>
+                    ${q.rollout ? `<tr><td>Rollout</td><td>${formatCurrency(q.rolloutTotal)}</td></tr>` : ''}
+                    ${q.vatRate > 0 ? `<tr><td>VAT (${q.vatRate}%)</td><td>${formatCurrency(q.vatAmount)}</td></tr>` : ''}
+                    ${q.discountAmount > 0 ? `
+                    <tr><td>Subtotal</td><td>${formatCurrency(q.beforeDiscount)}</td></tr>
+                    <tr class="discount-row"><td><strong>Discount (${q.discountPercent}%)</strong></td><td class="discount-applied">- ${formatCurrency(q.discountAmount)}</td></tr>
+                    ` : ''}
+                    <tr class="total-row"><td><strong>Grand Total</strong></td><td><strong>${formatCurrency(q.grandTotal)}</strong></td></tr>
+                </table>
+            </div>
+
+            <div class="proposal-section">
+                <h3>Timeline</h3>
+                <p><strong>${q.timeline.label}</strong></p>
+                <p>${q.timeline.note}</p>
+            </div>
+
+            <div class="proposal-section">
+                <h3>Revisions Policy</h3>
+                <p>${cfg.revisions.included} revision rounds included. ${cfg.revisions.note}</p>
+            </div>
+
+            <div class="proposal-section">
+                <h3>Payment Terms</h3>
+                <ul>
+                    ${cfg.paymentTerms.milestones.map(m => `<li>${m.label}: ${m.percent}%</li>`).join('')}
+                </ul>
+                <p>Net ${cfg.paymentTerms.netDays} days from invoice.</p>
+            </div>
+
+            <div class="proposal-section">
+                <h3>Assumptions</h3>
+                <ul>
+                    ${cfg.assumptions.map(a => `<li>${escapeHtml(a)}</li>`).join('')}
+                </ul>
+            </div>
+
+            <div class="proposal-section">
+                <h3>Exclusions</h3>
+                <ul>
+                    ${cfg.exclusions.map(e => `<li>${escapeHtml(e)}</li>`).join('')}
+                </ul>
+            </div>
+
+            <div class="proposal-section signature-section">
+                <h3>Acceptance</h3>
+                <p>Please sign below to accept this proposal.</p>
+                <div class="signature-block">
+                    <div class="signature-line">
+                        <span>Client Signature</span>
+                        <span>Date</span>
+                    </div>
+                    <div class="signature-line">
+                        <span>Name & Title</span>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="proposal-footer">
+                <p><strong>${cfg.company.name}</strong></p>
+                <p>${cfg.company.address}</p>
+                <p>Tel: ${cfg.company.tel} | Mobile: ${cfg.company.mobile}</p>
+                <p>Email: ${cfg.company.email}</p>
+            </div>
+        </div>
+    `;
+
+    AppState.elements.offerOutput.innerHTML = html;
+
+    // Also set plain text version
+    const plainText = generatePlainTextProposal(q, cfg);
+    if (AppState.elements.offerText) {
+        AppState.elements.offerText.value = plainText;
+    }
+}
+
+function generatePlainTextProposal(q, cfg) {
+    return `
+VERTEX DESIGN - DESIGN SERVICES PROPOSAL
+=========================================
+
+Quote ID: ${q.quoteId}
+Date: ${q.date}
+Valid for: ${cfg.offer_validity_days} days
+
+CLIENT
+------
+${q.data.clientName || 'To be confirmed'}
+Project: ${q.data.projectName || '-'}
+Location: ${q.data.location || '-'}
+
+PROJECT SCOPE
+-------------
+Area: ${q.data.area} sqm (${q.data.spaces} spaces)
+Type: ${capitalize(q.data.projectType)}
+Classification: ${capitalize(q.classification.size.value)} / ${capitalize(q.classification.complexity.value)} / ${capitalize(q.classification.scale.value)}
+
+SELECTED SERVICES
+-----------------
+${q.services.map(s => `• ${s.name}: ${formatCurrency(s.subtotal)}`).join('\n')}
+
+TOTAL FEE
+---------
+Services: ${formatCurrency(q.servicesTotal)}
+Add-ons: ${formatCurrency(q.addonsTotal)}
+${q.rollout ? `Rollout: ${formatCurrency(q.rolloutTotal)}\n` : ''}Grand Total: ${formatCurrency(q.grandTotal)}
+
+TIMELINE
+--------
+${q.timeline.label}
+
+PAYMENT TERMS
+-------------
+${cfg.paymentTerms.milestones.map(m => `• ${m.label}: ${m.percent}%`).join('\n')}
+
+---
+${cfg.company.name}
+${cfg.company.tel} | ${cfg.company.email}
+    `.trim();
+}
+
+// ============================================
+// FLOATING TOTAL UPDATE
+// ============================================
+
+function updateFloatingTotal() {
+    // This is an alias - updateSummaryPanel handles the floating total
+    updateSummaryPanel();
+}
+
+// ============================================
+// STICKY SUMMARY PANEL
+// ============================================
+
+function updateSummaryPanel() {
+    console.log('[DEBUG] updateSummaryPanel called');
+    const form = AppState.elements.form;
+    if (!form) {
+        console.log('[DEBUG] form is null, returning');
         return;
     }
-    cachedElements.configWarning.hidden = true;
-}
 
-function initializeApp() {
-    setOfferDate();
-    setOfferMode(pricingConfig.public_mode ? "budgetary" : "formal");
-    bindEvents();
-    generateQuoteId();
-    updateComplexityLevelState();
-    updateRenderingsCountState();
-    updatePackageDetails(getPackageCode());
-    calculateAndRender();
-}
-function bindEvents() {
-    if (!cachedElements.form) return;
-    cachedElements.form.querySelectorAll("input, select").forEach((field) => {
-        field.addEventListener("input", () => {
-            if (field.name === "package") {
-                updatePackageDetails(field.value);
-            }
-            if (field.name === "complexity") {
-                updateComplexityLevelState();
-            }
-            if (field.name === "addOns" || field.name === "additionalRenderingsCount") {
-                updateRenderingsCountState();
-            }
-            calculateAndRender();
-        });
-        field.addEventListener("change", () => {
-            if (field.name === "package") {
-                updatePackageDetails(field.value);
-            }
-            if (field.name === "complexity") {
-                updateComplexityLevelState();
-            }
-            if (field.name === "addOns" || field.name === "additionalRenderingsCount") {
-                updateRenderingsCountState();
-            }
-            calculateAndRender();
-        });
+    // Get quick estimate
+    const data = getFormData();
+    console.log('[DEBUG] Form data:', data);
+
+    // Try to derive classification if not yet set
+    if (data.area >= 10 && data.projectType) {
+        if (!AppState.classification) {
+            updateClassification();
+        }
+    }
+
+    const c = AppState.classification;
+    console.log('[DEBUG] Classification:', c);
+
+    // Get selected services
+    const selectedServices = getSelectedServices();
+    const serviceCount = selectedServices.length;
+    console.log('[DEBUG] Selected services:', selectedServices, 'count:', serviceCount);
+
+    // Quick price calculation (services + addons) - now using area-based rates
+    let servicesTotal = 0;
+    let addonsTotal = 0;
+
+    // Use default multiplier if classification not yet set
+    const complexMult = c ? (CONFIG.multipliers.complexity[c.complexity.value] || 1) : 1;
+    const facadeMult = c ? (CONFIG.multipliers.facade[c.facade.value] || 1) : 1;
+
+    // Always calculate services total (even without classification)
+    selectedServices.forEach(id => {
+        let fee = calculateServiceFee(id, data.area || 100, complexMult);
+        console.log('[DEBUG] Service', id, 'fee:', fee);
+        // Apply façade multiplier for façade services
+        if (id.startsWith("SF")) {
+            fee = Math.round(fee * facadeMult);
+        }
+        servicesTotal += fee;
+    });
+    console.log('[DEBUG] Services total:', servicesTotal);
+
+    // Calculate add-ons total
+    const addonChecks = form.querySelectorAll("input[name='addons']:checked");
+    addonChecks.forEach(cb => {
+        const key = cb.value;
+        const addon = CONFIG.addons[key];
+        if (!addon) return;
+
+        if (key === "extra_renders") {
+            const qty = sanitize(form.elements["extraRenderCount"]?.value, 0, 20);
+            addonsTotal += addon.price * qty;
+        } else if (key === "extra_revisions") {
+            const qty = sanitize(form.elements["extraRevisionCount"]?.value, 0, 10);
+            addonsTotal += addon.price * qty;
+        } else if (key === "authority_submission") {
+            addonsTotal += addon.price;
+        } else if (key === "site_visits") {
+            const qty = sanitize(form.elements["siteVisitCount"]?.value, 0, 20);
+            addonsTotal += addon.price * qty;
+        } else if (key === "fast_track") {
+            // Fast-track is 15% of services + other addons
+            addonsTotal += Math.round((servicesTotal + addonsTotal) * 0.15);
+        }
     });
 
-    cachedElements.offerModeRadios.forEach((radio) => {
-        radio.addEventListener("change", () => {
-            setOfferMode(radio.value);
-            renderOffer(lastCalculation);
-        });
+    const total = servicesTotal + addonsTotal;
+
+    // Apply user discount if applicable
+    const hasDiscount = AuthManager.hasDiscount();
+    const discountedTotal = hasDiscount ? AuthManager.applyDiscount(total) : total;
+    const discountPercent = AuthManager.getDiscountPercent();
+
+    // Update floating total element (only one Estimated Total bar now)
+    const floatingAmount = document.getElementById("floating-amount");
+    if (floatingAmount) {
+        if (hasDiscount && total > 0) {
+            // Show both original and discounted price
+            floatingAmount.innerHTML = `
+                <span class="discount-original">${formatCurrency(total)}</span>
+                <span class="discount-applied">${formatCurrency(discountedTotal)}</span>
+            `;
+        } else {
+            floatingAmount.textContent = formatCurrency(total);
+        }
+    }
+}
+
+// ============================================
+// QUOTE HISTORY
+// ============================================
+
+function saveQuote() {
+    if (!AppState.quote) {
+        showFeedback("No quote to save. Please complete the form first.", true);
+        return;
+    }
+
+    const q = AppState.quote;
+    const historyItem = {
+        id: q.quoteId,
+        date: q.date,
+        clientName: q.data.clientName || "Unnamed",
+        projectName: q.data.projectName || "Untitled",
+        total: q.grandTotal,
+        data: { ...q.data },
+        timestamp: Date.now()
+    };
+
+    AppState.quoteHistory.unshift(historyItem);
+    if (AppState.quoteHistory.length > 10) {
+        AppState.quoteHistory.pop();
+    }
+
+    try {
+        localStorage.setItem("vertex_quote_history", JSON.stringify(AppState.quoteHistory));
+    } catch (e) {
+        console.warn("Could not save to localStorage:", e);
+    }
+
+    renderQuoteHistory();
+    showFeedback("Quote saved to history!", false);
+}
+
+function loadQuoteHistory() {
+    try {
+        const saved = localStorage.getItem("vertex_quote_history");
+        if (saved) {
+            AppState.quoteHistory = JSON.parse(saved);
+            renderQuoteHistory();
+        }
+    } catch (e) {
+        console.warn("Could not load quote history:", e);
+    }
+}
+
+function renderQuoteHistory() {
+    const container = AppState.elements.quoteHistory;
+    if (!container) return;
+
+    if (AppState.quoteHistory.length === 0) {
+        container.innerHTML = '<p class="empty-state">No saved quotes yet.</p>';
+        return;
+    }
+
+    container.innerHTML = AppState.quoteHistory.map(item => `
+        <div class="history-item" data-id="${escapeHtml(item.id)}">
+            <strong>${escapeHtml(item.projectName)}</strong>
+            <span>${escapeHtml(item.clientName)} • ${formatCurrency(item.total)}</span>
+            <span>${escapeHtml(item.date)}</span>
+        </div>
+    `).join("");
+
+    // Click to load
+    container.querySelectorAll(".history-item").forEach(el => {
+        el.addEventListener("click", () => loadSavedQuote(el.dataset.id));
+    });
+}
+
+function loadSavedQuote(id) {
+    const item = AppState.quoteHistory.find(q => q.id === id);
+    if (!item) return;
+
+    const form = AppState.elements.form;
+    if (!form) return;
+
+    Object.keys(item.data).forEach(key => {
+        const field = form.elements[key];
+        if (field) {
+            if (typeof item.data[key] === "boolean") {
+                field.checked = item.data[key];
+            } else if (Array.isArray(item.data[key])) {
+                // Handle checkboxes
+            } else {
+                field.value = item.data[key];
+            }
+        }
     });
 
-    cachedElements.copyOfferBtn?.addEventListener("click", copyOfferText);
-    cachedElements.printOfferBtn?.addEventListener("click", () => window.print());
+    goToStep(1);
+    showFeedback(`Loaded quote: ${item.id}`, false);
+}
+
+// ============================================
+// FORM DATA HELPERS
+// ============================================
+
+function getFormData() {
+    const form = AppState.elements.form;
+    if (!form) return {};
+
+    const data = new FormData(form);
+
+    return {
+        clientName: (data.get("clientName") || "").trim(),
+        clientEmail: (data.get("clientEmail") || "").trim(),
+        projectName: (data.get("projectName") || "").trim(),
+        location: (data.get("location") || "").trim(),
+        area: sanitize(data.get("area"), 10, 50000),
+        spaces: sanitize(data.get("spaces"), 1, 100),
+        projectType: data.get("projectType") || "retail",
+        specialSystems: data.getAll("specialSystems"),
+        sites: sanitize(data.get("sites"), 1, 100),
+        reuseLevel: data.get("reuseLevel") || "adapted",
+        facadeType: data.get("facadeType") || "none",
+        facadeArea: sanitize(data.get("facadeArea"), 0, 5000),
+        signageCount: data.get("signageCount") || "0",
+        facadeFeatures: data.getAll("facadeFeatures")
+    };
+}
+
+function getSelectedServices() {
+    const form = AppState.elements.form;
+    if (!form) return [];
+    return Array.from(form.querySelectorAll("input[name='services']:checked")).map(cb => cb.value);
+}
+
+// ============================================
+// PACKAGE HANDLER - ALIGNED TO A/B/C
+// ============================================
+
+function applyPackage(packageType) {
+    const form = AppState.elements.form;
+    if (!form) return;
+
+    const pkg = CONFIG.packages[packageType];
+    if (!pkg) return;
+
+    // Update description
+    const descEl = AppState.elements.packageDescription;
+    if (descEl) {
+        descEl.textContent = pkg.description;
+    }
+
+    // Get services grid
+    const servicesGrid = form.querySelector(".services-grid");
+    const serviceCheckboxes = form.querySelectorAll("input[name='services']");
+
+    if (packageType === "custom" || pkg.services === null) {
+        // Enable all checkboxes for manual selection
+        serviceCheckboxes.forEach(cb => {
+            cb.disabled = false;
+        });
+        if (servicesGrid) servicesGrid.classList.remove("disabled");
+    } else {
+        // Apply preset and disable manual changes
+        serviceCheckboxes.forEach(cb => {
+            cb.checked = pkg.services.includes(cb.value);
+            cb.disabled = true; // Lock selection for presets
+        });
+        if (servicesGrid) servicesGrid.classList.add("disabled");
+    }
+
+    updateServicePrices();
+    updateFloatingTotal();
+    updateSummaryPanel();
+}
+
+// ============================================
+// UI HELPERS
+// ============================================
+
+function updateFacadeVisibility() {
+    const form = AppState.elements.form;
+    const facadeType = form?.querySelector("input[name='facadeType']:checked")?.value;
+    const details = AppState.elements.facadeDetails;
+    const services = AppState.elements.facadeServices;
+
+    if (details) {
+        details.hidden = (facadeType === "none");
+    }
+    if (services) {
+        services.hidden = (facadeType === "none");
+    }
+}
+
+function updateReuseVisibility() {
+    const form = AppState.elements.form;
+    const sites = sanitize(form?.elements["sites"]?.value, 1, 100);
+    const reuseSelect = form?.elements["reuseLevel"];
+
+    if (reuseSelect) {
+        reuseSelect.disabled = sites <= 1;
+    }
 }
 
 function setOfferDate() {
     const now = new Date();
-    const formattedDate = now.toLocaleDateString("en-GB", {
+    const formatted = now.toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "short",
         year: "numeric"
     });
-    if (cachedElements.offerDate) {
-        cachedElements.offerDate.textContent = formattedDate;
-    }
-    // Sync to print header
-    if (cachedElements.printDate) {
-        cachedElements.printDate.textContent = formattedDate;
-    }
-}
 
-function setOfferMode(mode) {
-    if (pricingConfig.public_mode) {
-        currentOfferMode = "budgetary";
-    } else {
-        currentOfferMode = mode === "budgetary" ? "budgetary" : "formal";
-    }
-    cachedElements.offerModeRadios.forEach((radio) => {
-        radio.checked = radio.value === currentOfferMode;
-        if (pricingConfig.public_mode) {
-            radio.disabled = radio.value !== "budgetary";
-        }
+    ["offer-date", "print-date"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = formatted;
     });
-}
-
-function updateComplexityLevelState() {
-    const complexityField = cachedElements.form?.elements["complexity"];
-    const levelField = cachedElements.form?.elements["complexityLevel"];
-    if (!complexityField || !levelField) return;
-    if (complexityField.value === "Standard") {
-        levelField.value = "typical";
-        levelField.disabled = true;
-    } else {
-        levelField.disabled = false;
-    }
-}
-
-function updateRenderingsCountState() {
-    const renderingsCheckbox = cachedElements.form?.querySelector(
-        "input[name='addOns'][value='additional_renderings_per_view']"
-    );
-    const renderingsCount = cachedElements.form?.elements["additionalRenderingsCount"];
-    if (!renderingsCheckbox || !renderingsCount) return;
-    if (renderingsCheckbox.checked) {
-        renderingsCount.disabled = false;
-        if (Number(renderingsCount.value) <= 0) {
-            renderingsCount.value = 1;
-        }
-    } else {
-        renderingsCount.value = 0;
-        renderingsCount.disabled = true;
-    }
-}
-
-function getPackageCode() {
-    return cachedElements.form?.elements["package"]?.value || "B";
-}
-
-function getFormData() {
-    const form = cachedElements.form;
-    if (!form) return null;
-    const data = new FormData(form);
-    return {
-        clientName: (data.get("clientName") || "").trim(),
-        projectName: (data.get("projectName") || "").trim(),
-        location: (data.get("location") || "").trim(),
-        projectType: data.get("projectType") || "Retail",
-        area: Number(data.get("area")),
-        package: data.get("package") || "B",
-        complexity: data.get("complexity") || "Standard",
-        complexityLevel: data.get("complexityLevel") || "typical",
-        siteCount: Number(data.get("siteCount")) || 1,
-        urgency: data.get("urgency") || "Normal",
-        addOns: data.getAll("addOns"),
-        additionalRenderingsCount: Number(data.get("additionalRenderingsCount")) || 0
-    };
-}
-
-function validateData(data) {
-    const errors = [];
-    if (!Number.isFinite(data.area) || data.area <= 0) {
-        errors.push("Area must be greater than zero.");
-    }
-    if (!Number.isFinite(data.siteCount) || data.siteCount < 1) {
-        errors.push("Number of sites must be at least 1.");
-    }
-    if (
-        data.addOns.includes("additional_renderings_per_view") &&
-        (!Number.isFinite(data.additionalRenderingsCount) || data.additionalRenderingsCount < 1)
-    ) {
-        errors.push("Additional renderings count must be at least 1.");
-    }
-    return errors;
-}
-
-function calculateAndRender() {
-    const data = getFormData();
-    if (!data) return;
-    const errors = validateData(data);
-    if (errors.length) {
-        showFeedback(errors.join(" "), true);
-        cachedElements.offerOutput.innerHTML =
-            '<p class="placeholder">Enter valid project details to generate the offer.</p>';
-        cachedElements.offerText.value = "";
-        return;
-    }
-    showFeedback("", false);
-    lastCalculation = calculateOffer(data);
-    renderOffer(lastCalculation);
-}
-
-function calculateOffer(data, options = {}) {
-    const cfg = pricingConfig;
-    const anchorRate = resolveAnchorRate(options.anchorRate);
-    const baseFee = data.area * anchorRate;
-
-    const smallThreshold = toNumber(cfg.small_area_threshold_sqm || cfg.small_project_threshold_sqm);
-    const smallPremiumPercent = toNumber(cfg.small_area_uplift_percent || cfg.small_project_premium_percent);
-    const smallUpliftCap = toNumber(cfg.small_area_uplift_cap_kwd);
-    const largeThreshold = toNumber(cfg.large_area_threshold_sqm || cfg.large_project_threshold_sqm);
-    const largeDiscount = toNumber(cfg.large_area_discount_kwd_per_sqm || cfg.large_discount_per_sqm);
-    const veryLargeThreshold = toNumber(cfg.very_large_area_threshold_sqm || cfg.very_large_project_threshold_sqm);
-    const veryLargeDiscount = toNumber(
-        cfg.very_large_area_discount_kwd_per_sqm || cfg.very_large_discount_per_sqm
-    );
-
-    let sizeAdjustment = 0;
-    if (data.area < smallThreshold) {
-        sizeAdjustment = baseFee * (smallPremiumPercent / 100);
-        if (smallUpliftCap > 0) {
-            sizeAdjustment = Math.min(sizeAdjustment, smallUpliftCap);
-        }
-    } else if (data.area >= largeThreshold) {
-        const discountBaseArea = Math.min(data.area, veryLargeThreshold) - largeThreshold;
-        if (discountBaseArea > 0) {
-            sizeAdjustment -= discountBaseArea * largeDiscount;
-        }
-        if (data.area > veryLargeThreshold) {
-            sizeAdjustment -= (data.area - veryLargeThreshold) * veryLargeDiscount;
-        }
-    }
-
-    const sizeAdjustedFee = baseFee + sizeAdjustment;
-    const packageFactor = toNumber(cfg.package_effort_factor?.[data.package]) || 1;
-    const packageAdjustment = sizeAdjustedFee * (packageFactor - 1);
-    let subtotal = sizeAdjustedFee + packageAdjustment;
-
-    const complexityAddition = getComplexityAddition(data.complexity, data.complexityLevel);
-    subtotal += complexityAddition;
-
-    let fastTrackAdjustment = 0;
-    if (data.urgency === "Fast-track") {
-        const multiplier = toNumber(cfg.fast_track_multiplier) || 1;
-        fastTrackAdjustment = subtotal * (multiplier - 1);
-        subtotal += fastTrackAdjustment;
-    }
-
-    const minFee = toNumber(cfg.min_fee_by_package?.[data.package]) || 0;
-    let minFeeAdjustment = 0;
-    if (subtotal < minFee) {
-        minFeeAdjustment = minFee - subtotal;
-        subtotal = minFee;
-    }
-
-    const site1Fee = subtotal;
-    const rollout = calculateRollout(site1Fee, data.siteCount, data.area);
-    const addOns = calculateAddOns(data);
-
-    const totalFee = site1Fee + rollout.total + addOns.total;
-
-    return {
-        data,
-        baseFee,
-        sizeAdjustment,
-        packageAdjustment,
-        complexityAddition,
-        fastTrackAdjustment,
-        minFeeAdjustment,
-        site1Fee,
-        rollout,
-        addOns,
-        totalFee
-    };
-}
-function calculateRollout(site1Fee, siteCount, area) {
-    if (siteCount <= 1) {
-        return { sites: siteCount, perSiteFee: 0, total: 0 };
-    }
-    const mode = pricingConfig.rollout_adaptation_mode || pricingConfig.rollout_adaptation?.basis;
-    const percent = toNumber(
-        pricingConfig.rollout_adaptation_percent_of_site1 || pricingConfig.rollout_adaptation?.percent
-    );
-    const minFee = toNumber(
-        pricingConfig.rollout_adaptation_min_kwd_per_site || pricingConfig.rollout_adaptation?.min_kwd_per_site
-    );
-    let perSiteFee = 0;
-
-    if (mode === "flat_per_site") {
-        perSiteFee = toNumber(
-            pricingConfig.rollout_adaptation_flat_kwd_per_site || pricingConfig.rollout_adaptation?.flat_kwd_per_site
-        );
-    } else if (mode === "per_sqm_with_min") {
-        const perSqm = toNumber(
-            pricingConfig.rollout_adaptation_per_sqm_kwd || pricingConfig.rollout_adaptation?.per_sqm_kwd
-        );
-        perSiteFee = perSqm * area;
-    } else {
-        perSiteFee = site1Fee * (percent / 100);
-    }
-
-    perSiteFee = Math.max(perSiteFee, minFee);
-    const total = perSiteFee * (siteCount - 1);
-    return { sites: siteCount, perSiteFee, total };
-}
-
-function calculateAddOns(data) {
-    const addOns = [];
-    let total = 0;
-    data.addOns.forEach((key) => {
-        if (key === "additional_renderings_per_view") {
-            const unit = toNumber(pricingConfig.add_ons?.[key]);
-            const count = Math.max(0, data.additionalRenderingsCount);
-            const amount = unit * count;
-            if (amount > 0) {
-                addOns.push({ key, label: addOnLabels[key], amount, quantity: count, unit });
-                total += amount;
-            }
-            return;
-        }
-        const amount = toNumber(pricingConfig.add_ons?.[key]);
-        if (amount > 0) {
-            addOns.push({ key, label: addOnLabels[key], amount, quantity: 1 });
-            total += amount;
-        }
-    });
-    return { items: addOns, total };
-}
-
-function getComplexityAddition(complexity, level) {
-    const tiers = pricingConfig.complexity_additions_kwd || {};
-    const values = tiers[complexity] || {};
-    const selection = values[level] ?? values.typical ?? 0;
-    return toNumber(selection);
-}
-
-function renderOffer(calc) {
-    if (!calc) return;
-    const formatter = (value) => formatCurrency(value, pricingConfig.currency);
-    const packageDetails = pricingConfig.package_details?.[calc.data.package] || {};
-    const timelineLines = buildTimelineLines(calc.data, packageDetails);
-    const summaryHtml = buildSummaryHtml(calc.data, packageDetails);
-    const breakdownHtml = buildBreakdownHtml(calc, formatter);
-    const budgetaryRange = getBudgetaryRange(calc);
-    const fastTrackNote = calc.data.urgency === "Fast-track"
-        ? "Fast-track selected: additional resources and revision constraints apply."
-        : "";
-
-    if (currentOfferMode === "budgetary") {
-        cachedElements.offerOutput.innerHTML = `
-            <div class="total-card">
-                <div class="section-title">Budgetary Range</div>
-                <strong>${formatter(budgetaryRange.lower)} - ${formatter(budgetaryRange.upper)}</strong>
-            </div>
-            <div>
-                <div class="section-title">Key Inputs</div>
-                <ul class="summary-list">${summaryHtml}</ul>
-            </div>
-            <div>
-                <div class="section-title">Estimated Fee Breakdown</div>
-                <ul class="breakdown-list">${breakdownHtml}</ul>
-            </div>
-            ${fastTrackNote ? `<p class="meta-line">${fastTrackNote}</p>` : ""}
-        `;
-    } else {
-        cachedElements.offerOutput.innerHTML = `
-            <div class="total-card">
-                <div class="section-title">Fixed Fee</div>
-                <strong>${formatter(calc.totalFee)}</strong>
-            </div>
-            <div>
-                <div class="section-title">Key Inputs</div>
-                <ul class="summary-list">${summaryHtml}</ul>
-            </div>
-            <div>
-                <div class="section-title">Fee Breakdown</div>
-                <ul class="breakdown-list">${breakdownHtml}</ul>
-            </div>
-            <div>
-                <div class="section-title">Deliverables</div>
-                <ul class="bullet-list">${buildBulletList(packageDetails.deliverables)}</ul>
-            </div>
-            <div>
-                <div class="section-title">Timeline</div>
-                <ul class="bullet-list">${buildBulletList(timelineLines)}</ul>
-                <ul class="bullet-list">${buildBulletList(packageDetails.stage_breakdown)}</ul>
-            </div>
-            <div>
-                <div class="section-title">Revisions Included</div>
-                <p class="meta-line">${formatRevisions(packageDetails.revisions_included)}</p>
-                <p class="meta-line">${pricingConfig.revisions_out_of_scope_note}</p>
-            </div>
-            <div>
-                <div class="section-title">Payment Terms</div>
-                <ul class="bullet-list">${buildPaymentTerms()}</ul>
-                <p class="meta-line">Net ${pricingConfig.payment_terms?.net_days || 30} days.</p>
-            </div>
-            <div>
-                <div class="section-title">Assumptions</div>
-                <ul class="bullet-list">${buildBulletList(pricingConfig.assumptions)}</ul>
-            </div>
-            <div>
-                <div class="section-title">Exclusions</div>
-                <ul class="bullet-list">${buildBulletList(pricingConfig.exclusions)}</ul>
-            </div>
-            <div>
-                <div class="section-title">Validity</div>
-                <p class="meta-line">${pricingConfig.offer_validity_days} days from date of issue.</p>
-            </div>
-            <div>
-                <div class="section-title">Next Steps</div>
-                <ul class="bullet-list">${buildBulletList(pricingConfig.next_steps)}</ul>
-            </div>
-            ${fastTrackNote ? `<p class="meta-line">${fastTrackNote}</p>` : ""}
-        `;
-    }
-
-    cachedElements.offerText.value = buildOfferText(calc, packageDetails, budgetaryRange);
-}
-
-function buildSummaryHtml(data, packageDetails) {
-    const packageLabel = packageDetails.title || data.package;
-    const complexityLabel = data.complexity === "Standard"
-        ? "Standard"
-        : `${data.complexity} (${capitalize(data.complexityLevel)})`;
-    const items = [
-        { label: "Client", value: data.clientName || "-" },
-        { label: "Project", value: data.projectName || "-" },
-        { label: "Location", value: data.location || "-" },
-        { label: "Type", value: data.projectType || "-" },
-        { label: "Area", value: `${data.area} sqm` },
-        { label: "Package", value: packageLabel },
-        { label: "Complexity", value: complexityLabel },
-        { label: "Urgency", value: data.urgency },
-        { label: "Sites", value: data.siteCount > 1 ? `${data.siteCount} sites` : "Single site" }
-    ];
-    return items
-        .map((item) => `<li><span>${item.label}</span><span>${item.value}</span></li>`)
-        .join("");
-}
-
-function buildBreakdownHtml(calc, formatter) {
-    const items = [
-        { label: "Base Fee (Area x Rate)", value: calc.baseFee },
-        { label: "Size Adjustment", value: calc.sizeAdjustment },
-        { label: "Package Adjustment", value: calc.packageAdjustment },
-        { label: "Complexity Addition", value: calc.complexityAddition }
-    ];
-    if (calc.fastTrackAdjustment > 0) {
-        items.push({ label: "Fast-track Adjustment", value: calc.fastTrackAdjustment });
-    }
-    if (calc.minFeeAdjustment > 0) {
-        items.push({ label: "Minimum Fee Floor", value: calc.minFeeAdjustment });
-    }
-    items.push({ label: "Site 1 Design Fee", value: calc.site1Fee });
-
-    if (calc.rollout.sites > 1) {
-        items.push({
-            label: `Rollout Adaptation (${calc.rollout.sites - 1} sites @ ${formatter(calc.rollout.perSiteFee)})`,
-            value: calc.rollout.total
-        });
-    }
-
-    if (calc.addOns.items.length) {
-        calc.addOns.items.forEach((addOn) => {
-            const label = addOn.quantity && addOn.quantity > 1
-                ? `${addOn.label} (${addOn.quantity}x)`
-                : addOn.label;
-            items.push({ label, value: addOn.amount });
-        });
-    }
-
-    items.push({ label: "Total Design Fee", value: calc.totalFee, strong: true });
-
-    return items
-        .map((item) => {
-            const value = formatter(item.value);
-            if (item.strong) {
-                return `<li><strong>${item.label}</strong><strong>${value}</strong></li>`;
-            }
-            return `<li><span>${item.label}</span><span>${value}</span></li>`;
-        })
-        .join("");
-}
-function buildOfferText(calc, packageDetails, budgetaryRange) {
-    const formatter = (value) => formatCurrency(value, pricingConfig.currency);
-    const company = pricingConfig.company_info || {};
-    const contacts = company.contacts || {};
-    const timelineLines = buildTimelineLines(calc.data, packageDetails);
-    const lines = [
-        `${company.name || "Vertex Design Buildings General Contracting Co."} (design-only offer)`,
-        `Date: ${cachedElements.offerDate?.textContent || "-"}`,
-        `Client: ${calc.data.clientName || "-"}`,
-        `Project: ${calc.data.projectName || "-"}`,
-        `Location: ${calc.data.location || "-"}`,
-        `Scope: ${packageDetails.title || calc.data.package}`,
-        "Deliverables:",
-        ...listLines(packageDetails.deliverables),
-        "Timeline:",
-        ...listLines(timelineLines),
-        "Stage Breakdown:",
-        ...listLines(packageDetails.stage_breakdown),
-        `Revisions Included: ${formatRevisions(packageDetails.revisions_included)}`,
-        `Out-of-Scope: ${pricingConfig.revisions_out_of_scope_note}`,
-        "Fee Summary (KWD):",
-        `Base Fee (Area x Rate): ${formatter(calc.baseFee)}`,
-        `Size Adjustment: ${formatter(calc.sizeAdjustment)}`,
-        `Package Adjustment: ${formatter(calc.packageAdjustment)}`,
-        `Complexity Addition: ${formatter(calc.complexityAddition)}`,
-        calc.fastTrackAdjustment > 0
-            ? `Fast-track Adjustment: ${formatter(calc.fastTrackAdjustment)}`
-            : null,
-        calc.minFeeAdjustment > 0
-            ? `Minimum Fee Floor: ${formatter(calc.minFeeAdjustment)}`
-            : null,
-        `Site 1 Design Fee: ${formatter(calc.site1Fee)}`,
-        calc.rollout.sites > 1
-            ? `Rollout Adaptation (${calc.rollout.sites - 1} sites @ ${formatter(calc.rollout.perSiteFee)}): ${formatter(calc.rollout.total)}`
-            : null,
-        calc.addOns.items.length
-            ? "Add-ons:"
-            : null,
-        ...addOnLines(calc.addOns.items, formatter),
-        currentOfferMode === "budgetary"
-            ? `Budgetary Range: ${formatter(budgetaryRange.lower)} - ${formatter(budgetaryRange.upper)}`
-            : `Total Design Fee: ${formatter(calc.totalFee)}`,
-        calc.data.urgency === "Fast-track"
-            ? "Fast-track selected: additional resources and revision constraints apply."
-            : null,
-        "Assumptions:",
-        ...listLines(pricingConfig.assumptions),
-        "Exclusions:",
-        ...listLines(pricingConfig.exclusions),
-        `Validity: ${pricingConfig.offer_validity_days} days`,
-        "Payment Terms:",
-        ...paymentLines(),
-        `Net ${pricingConfig.payment_terms?.net_days || 30} days`,
-        "Next Steps:",
-        ...listLines(pricingConfig.next_steps),
-        "",
-        company.name || "Vertex Design Buildings General Contracting Co.",
-        ...(company.address_lines || []),
-        "Contacts",
-        `Tel: ${contacts.tel || "-"}`,
-        `Mobile: ${contacts.mobile || "-"}`,
-        `Email: ${contacts.email || "-"}`
-    ].filter(Boolean);
-
-    return lines.join("\n");
-}
-
-function addOnLines(items, formatter) {
-    if (!items.length) return [];
-    return items.map((item) => {
-        if (item.quantity && item.quantity > 1) {
-            return `- ${item.label} (${item.quantity}x): ${formatter(item.amount)}`;
-        }
-        return `- ${item.label}: ${formatter(item.amount)}`;
-    });
-}
-
-function listLines(items) {
-    if (!Array.isArray(items) || items.length === 0) {
-        return ["- "];
-    }
-    return items.map((item) => `- ${item}`);
-}
-
-function buildPaymentTerms() {
-    const milestones = pricingConfig.payment_terms?.milestones || [];
-    if (!milestones.length) return "";
-    return milestones
-        .map((item) => `<li>${item.label}: ${item.percent}%</li>`)
-        .join("");
-}
-
-function paymentLines() {
-    const milestones = pricingConfig.payment_terms?.milestones || [];
-    return milestones.map((item) => `- ${item.label}: ${item.percent}%`);
-}
-
-function buildBulletList(items) {
-    if (!Array.isArray(items) || items.length === 0) {
-        return "<li>-</li>";
-    }
-    return items.map((item) => `<li>${item}</li>`).join("");
-}
-
-function getTimelineLabel(packageCode, packageDetails) {
-    const timeline = pricingConfig.timeline_by_package?.[packageCode] || {};
-    if (timeline.label) {
-        return timeline.label;
-    }
-    const range = formatWeeksRange(timeline.typical_weeks_min, timeline.typical_weeks_max);
-    return range !== "-" ? range : packageDetails.typical_timeline_weeks || "-";
-}
-
-function buildTimelineLines(data, packageDetails) {
-    const timeline = pricingConfig.timeline_by_package?.[data.package] || {};
-    const minWeeks = toNumber(timeline.typical_weeks_min);
-    const maxWeeks = toNumber(timeline.typical_weeks_max);
-    const label = timeline.label || packageDetails.typical_timeline_weeks || "-";
-
-    if (data.package === "C" && data.siteCount > 1) {
-        const site1Label = formatWeeksRange(minWeeks, maxWeeks);
-        const lines = [`Site 1: ${site1Label !== "-" ? site1Label : label}`];
-        const minDays = toNumber(timeline.adaptation_days_min);
-        const maxDays = toNumber(timeline.adaptation_days_max);
-        if (minDays > 0 || maxDays > 0) {
-            const totalMinDays = minDays * (data.siteCount - 1);
-            const totalMaxDays = maxDays * (data.siteCount - 1);
-            const daysText = formatRange(totalMinDays, totalMaxDays, "working days");
-            const weekText = formatRange(
-                roundToOneDecimal(totalMinDays / 5),
-                roundToOneDecimal(totalMaxDays / 5),
-                "weeks"
-            );
-            lines.push(`Sites 2+: ${daysText} total${weekText !== "-" ? ` (~${weekText})` : ""}`);
-        }
-        return lines;
-    }
-
-    return [label !== "-" ? label : formatWeeksRange(minWeeks, maxWeeks)];
-}
-
-function formatWeeksRange(min, max) {
-    return formatRange(min, max, "weeks (working)");
-}
-
-function formatRange(min, max, suffix) {
-    const minValue = toNumber(min);
-    const maxValue = toNumber(max);
-    if (!minValue && !maxValue) {
-        return "-";
-    }
-    if (minValue && maxValue && minValue !== maxValue) {
-        return `${minValue}-${maxValue} ${suffix}`;
-    }
-    const value = minValue || maxValue;
-    return `${value} ${suffix}`;
-}
-
-function roundToOneDecimal(value) {
-    if (!Number.isFinite(value)) return 0;
-    return Math.round(value * 10) / 10;
-}
-
-function updatePackageDetails(packageCode) {
-    const details = pricingConfig.package_details?.[packageCode] || {};
-    if (cachedElements.packageTitle) {
-        cachedElements.packageTitle.textContent = details.title || "-";
-    }
-    if (cachedElements.packagePurpose) {
-        cachedElements.packagePurpose.textContent = details.purpose || "-";
-    }
-    populateList(cachedElements.packageDeliverables, details.deliverables);
-    if (cachedElements.packageRevisions) {
-        cachedElements.packageRevisions.textContent = formatRevisions(details.revisions_included);
-    }
-    if (cachedElements.packageTimeline) {
-        cachedElements.packageTimeline.textContent = getTimelineLabel(packageCode, details);
-    }
-    populateList(cachedElements.packageStages, details.stage_breakdown);
-}
-
-function populateList(target, items) {
-    if (!target) return;
-    target.innerHTML = "";
-    if (!Array.isArray(items) || items.length === 0) {
-        const item = document.createElement("li");
-        item.textContent = "-";
-        target.appendChild(item);
-        return;
-    }
-    items.forEach((entry) => {
-        const item = document.createElement("li");
-        item.textContent = entry;
-        target.appendChild(item);
-    });
-}
-
-function formatRevisions(value) {
-    if (typeof value === "number") {
-        return `${value} rounds`;
-    }
-    if (typeof value === "string" && value.trim()) {
-        return value;
-    }
-    return "-";
-}
-
-function getBudgetaryRange(calc) {
-    const minRate = toNumber(pricingConfig.anchor_rate_kwd_per_sqm_min);
-    const maxRate = toNumber(pricingConfig.anchor_rate_kwd_per_sqm_max);
-    if (calc && minRate > 0 && maxRate > 0 && maxRate >= minRate) {
-        const lowerCalc = calculateOffer(calc.data, { anchorRate: minRate });
-        const upperCalc = calculateOffer(calc.data, { anchorRate: maxRate });
-        return {
-            lower: Math.min(lowerCalc.totalFee, upperCalc.totalFee),
-            upper: Math.max(lowerCalc.totalFee, upperCalc.totalFee)
-        };
-    }
-    const total = calc?.totalFee || 0;
-    const percent = toNumber(pricingConfig.budgetary_range_percent);
-    const ratio = percent > 1 ? percent / 100 : percent;
-    return {
-        lower: total * (1 - ratio),
-        upper: total * (1 + ratio)
-    };
-}
-
-function copyOfferText() {
-    const text = cachedElements.offerText.value;
-    if (!text) {
-        showFeedback("Generate the offer before copying.", true);
-        return;
-    }
-    navigator.clipboard
-        .writeText(text)
-        .then(() => showFeedback("Offer copied to clipboard.", false))
-        .catch(() => {
-            cachedElements.offerText.select();
-            document.execCommand("copy");
-            showFeedback("Offer copied to clipboard.", false);
-        });
 }
 
 function generateQuoteId() {
@@ -984,49 +1566,214 @@ function generateQuoteId() {
         String(now.getMonth() + 1).padStart(2, "0"),
         String(now.getDate()).padStart(2, "0")
     ].join("");
-    const random = Math.floor(1000 + Math.random() * 9000);
-    const id = `${yyyymmdd}-${random}`;
-    if (cachedElements.quoteId) {
-        cachedElements.quoteId.textContent = id;
+
+    let random;
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+        const arr = new Uint16Array(1);
+        crypto.getRandomValues(arr);
+        random = 1000 + (arr[0] % 9000);
+    } else {
+        random = Math.floor(1000 + Math.random() * 9000);
     }
-    // Sync to print header
-    if (cachedElements.printQuoteId) {
-        cachedElements.printQuoteId.textContent = id;
-    }
+
+    const id = `VD-${yyyymmdd}-${random}`;
+
+    ["quote-id", "print-quote-id"].forEach(elId => {
+        const el = document.getElementById(elId);
+        if (el) el.textContent = id;
+    });
+
     return id;
 }
 
-function formatCurrency(value, currency) {
-    if (!Number.isFinite(value)) return "-";
-    return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: currency || "KWD",
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(value);
-}
-
-function resolveAnchorRate(override) {
-    if (Number.isFinite(override)) {
-        return override;
-    }
-    return toNumber(
-        pricingConfig.anchor_rate_kwd_per_sqm_default || pricingConfig.anchor_rate_kwd_per_sqm
-    );
-}
-
-function toNumber(value) {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : 0;
-}
-
-function capitalize(value) {
-    if (!value) return "";
-    return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
 function showFeedback(message, isError) {
-    if (!cachedElements.feedback) return;
-    cachedElements.feedback.textContent = message;
-    cachedElements.feedback.style.color = isError ? "#b45309" : "#0b5b4b";
+    const el = AppState.elements.feedback;
+    if (!el) return;
+
+    el.textContent = message;
+    el.classList.remove("visible", "error", "success");
+
+    if (message) {
+        el.classList.add("visible", isError ? "error" : "success");
+    }
+}
+
+function showTooltip(e) {
+    const text = e.currentTarget.dataset.tooltip;
+    const container = AppState.elements.tooltipContainer;
+    if (!container || !text) return;
+
+    container.textContent = text;
+    container.classList.add("visible");
+    container.setAttribute("aria-hidden", "false");
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    container.style.top = `${rect.bottom + 8}px`;
+    container.style.left = `${rect.left + rect.width / 2}px`;
+    container.style.transform = "translateX(-50%)";
+}
+
+function hideTooltip() {
+    const container = AppState.elements.tooltipContainer;
+    if (container) {
+        container.classList.remove("visible");
+        container.setAttribute("aria-hidden", "true");
+    }
+}
+
+// ============================================
+// SPECIAL SYSTEMS - CONDITIONAL DISPLAY
+// ============================================
+
+function updateSpecialSystems() {
+    const form = AppState.elements.form;
+    const group = AppState.elements.specialSystemsGroup;
+    if (!form || !group) return;
+
+    const projectType = form.elements["projectType"]?.value || "";
+
+    // Hide all systems first
+    const allOptions = group.querySelectorAll(".checkbox-option");
+    allOptions.forEach(opt => {
+        opt.style.display = "none";
+        const checkbox = opt.querySelector("input[type='checkbox']");
+        if (checkbox) checkbox.checked = false;
+    });
+
+    // If no project type selected or retail/showroom (no special systems), hide group
+    const typesWithNoSystems = ["", "retail", "showroom"];
+    if (typesWithNoSystems.includes(projectType)) {
+        group.hidden = true;
+        return;
+    }
+
+    // Show group and relevant systems
+    group.hidden = false;
+
+    allOptions.forEach(opt => {
+        const categories = (opt.dataset.category || "").split(" ");
+        if (categories.includes(projectType)) {
+            opt.style.display = "flex";
+        }
+    });
+}
+
+// Note: updateFloatingTotal is defined earlier as an alias to updateSummaryPanel
+
+// ============================================
+// ACTIONS
+// ============================================
+
+async function downloadPdf() {
+    if (typeof html2pdf === "undefined") {
+        showFeedback("PDF library not loaded. Please try printing instead.", true);
+        return;
+    }
+
+    const content = AppState.elements.offerOutput;
+    if (!content || !content.innerHTML.trim()) {
+        showFeedback("No proposal to download. Please complete all steps first.", true);
+        return;
+    }
+
+    const opt = {
+        margin: [15, 15, 20, 15],
+        filename: `Vertex-Design-${document.getElementById("quote-id")?.textContent || "Quote"}.pdf`,
+        image: { type: "jpeg", quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["avoid-all", "css", "legacy"] }
+    };
+
+    try {
+        await html2pdf().set(opt).from(content).save();
+        showFeedback("PDF downloaded successfully!", false);
+    } catch (error) {
+        console.error("PDF error:", error);
+        showFeedback("PDF generation failed. Please try printing.", true);
+    }
+}
+
+function copyOfferText() {
+    const text = AppState.elements.offerText?.value;
+    if (!text) {
+        showFeedback("No offer text to copy.", true);
+        return;
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
+        showFeedback("Offer copied to clipboard!", false);
+    }).catch(() => {
+        showFeedback("Copy failed. Please select and copy manually.", true);
+    });
+}
+
+function resetForm() {
+    const form = AppState.elements.form;
+    if (form) form.reset();
+
+    AppState.currentStep = 1;
+    AppState.classification = null;
+    AppState.quote = null;
+
+    generateQuoteId();
+    setOfferDate();
+    updateFacadeVisibility();
+    updateReuseVisibility();
+    updateSpecialSystems();
+
+    // Reset package dropdown to B
+    if (AppState.elements.packageType) {
+        AppState.elements.packageType.value = "B";
+    }
+    applyPackage("B");
+
+    goToStep(1);
+
+    if (AppState.elements.offerOutput) {
+        AppState.elements.offerOutput.innerHTML = '<p class="placeholder">Proposal will appear here...</p>';
+    }
+}
+
+// ============================================
+// UTILITIES
+// ============================================
+
+function sanitize(value, min = 0, max = Infinity) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return min;
+    return Math.max(min, Math.min(max, num));
+}
+
+function escapeHtml(str) {
+    if (typeof str !== "string") return "";
+    const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
+    return str.replace(/[&<>"']/g, c => map[c]);
+}
+
+function capitalize(str) {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function formatCurrency(value, currency = CONFIG.currency) {
+    if (!Number.isFinite(value)) return "-";
+    try {
+        return new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(value);
+    } catch (e) {
+        return `${currency} ${Math.round(value).toLocaleString()}`;
+    }
+}
+
+function debounce(fn, delay) {
+    let timer;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
 }
