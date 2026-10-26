@@ -117,3 +117,14 @@ def test_copy_and_readback_verification(tmp_path):
     (dst / "bootmgr").write_bytes(b"corrupted")
     with pytest.raises(UsbWriteError):
         verify_tree(dst, tree, hashes)
+
+
+def test_list_tree_skips_windows_system_folders(tmp_path):
+    (tmp_path / "System Volume Information").mkdir()
+    (tmp_path / "System Volume Information" / "WPSettings.dat").write_bytes(b"x")
+    (tmp_path / "$RECYCLE.BIN").mkdir()
+    (tmp_path / "$RECYCLE.BIN" / "desktop.ini").write_bytes(b"x")
+    (tmp_path / "sub" / "System Volume Information").mkdir(parents=True)
+    (tmp_path / "sub" / "System Volume Information" / "keep.txt").write_bytes(b"x")
+    (tmp_path / "bootmgr").write_bytes(b"x")
+    assert sorted(e.relpath for e in list_tree(tmp_path)) == ["bootmgr", "sub/System Volume Information/keep.txt"]

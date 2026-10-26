@@ -17,10 +17,16 @@ CHUNK = 4 * 1024 * 1024
 Progress = Callable[[int, int], None]
 
 
+# Folders Windows creates on every volume; not part of the ISO and possibly access-denied.
+SYSTEM_DIRS = {"system volume information", "$recycle.bin"}
+
+
 def list_tree(root: str | Path) -> list[FileEntry]:
     root = Path(root)
     entries = []
     for dirpath, dirnames, filenames in os.walk(root):
+        if Path(dirpath) == root:
+            dirnames[:] = [d for d in dirnames if d.lower() not in SYSTEM_DIRS]
         dirnames.sort()
         for name in sorted(filenames):
             full = Path(dirpath) / name
