@@ -1,0 +1,67 @@
+name: Corex Boot - Windows build & test
+
+on:
+  push:
+    paths:
+      - "corex-boot/**"
+      - ".github/workflows/corex-boot.yml"
+  pull_request:
+    paths:
+      - "corex-boot/**"
+      - ".github/workflows/corex-boot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: corex-boot
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Unit, safety and GUI tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q --ignore=tests/test_windows_integration.py
+
+      # Disposable GitHub VM: real Storage cmdlets, VHD as a stand-in USB drive,
+      # and a deliberate attempt to erase the system disk that must be refused.
+      - name: Windows integration tests (real disk operations on a VHD)
+        env:
+          COREX_WINDOWS_INTEGRATION: "1"
+          COREX_DESTRUCTIVE_CI: "1"
+        run: python -m pytest -v -s tests/test_windows_integration.py
+
+      - name: Build CorexBoot.exe
+        run: python -m PyInstaller --noconfirm --clean corex_boot.spec
+
+      - name: Smoke-test the built EXE
+        run: |
+          $exe = Resolve-Path dist\CorexBoot.exe
+          $out = Join-Path $env:RUNNER_TEMP 'selftest.json'
+          $p = Start-Process -FilePath $exe -ArgumentList '--self-test', $out -PassThru -Wait
+          Get-Content $out
+          if ($p.ExitCode -ne 0) { throw "Self-test failed with exit code $($p.ExitCode)" }
+          $r = Get-Content $out | ConvertFrom-Json
+          if (-not $r.ok) { throw 'Self-test reported failure' }
+          "SHA256: " + (Get-FileHash $exe -Algorithm SHA256).Hash
+          "Size:   " + (Get-Item $exe).Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CorexBoot-windows-x64
+          path: corex-boot/dist/CorexBoot.exe
+          if-no-files-found: error

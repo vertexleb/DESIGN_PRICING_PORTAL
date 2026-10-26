@@ -1,0 +1,3 @@
+# Runtime dependencies (Python 3.12+). Everything else is the Python standard library
+# and Windows' built-in PowerShell Storage cmdlets.
+PySide6-Essentials==6.12.0

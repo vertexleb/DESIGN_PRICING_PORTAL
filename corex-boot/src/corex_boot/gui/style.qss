@@ -1,0 +1,28 @@
+QWidget { font-family: "Segoe UI", "Inter", sans-serif; font-size: 10pt; color: #1b1f24; }
+QMainWindow, #root { background: #f4f6f9; }
+#title { font-size: 20pt; font-weight: 600; color: #0f172a; }
+#subtitle { color: #5b6573; }
+#card { background: #ffffff; border: 1px solid #e3e7ed; border-radius: 10px; }
+#cardTitle { font-weight: 600; font-size: 11pt; }
+#fieldLabel { color: #5b6573; }
+#fieldValue { font-weight: 600; }
+#hint { color: #5b6573; }
+#banner { background: #fff4e5; border: 1px solid #f5c37a; border-radius: 8px; padding: 8px; color: #7a4b00; }
+QComboBox { padding: 6px 10px; border: 1px solid #cfd6df; border-radius: 6px; background: #fff; min-height: 22px; }
+QComboBox:disabled { color: #9aa3ae; background: #f1f3f6; }
+QPushButton { padding: 7px 16px; border: 1px solid #cfd6df; border-radius: 6px; background: #ffffff; }
+QPushButton:hover { background: #f1f4f8; }
+QPushButton:disabled { color: #9aa3ae; background: #f1f3f6; }
+QPushButton#primary { background: #2563eb; color: #ffffff; border: none; font-weight: 600; font-size: 11pt; padding: 10px 22px; }
+QPushButton#primary:hover { background: #1d4ed8; }
+QPushButton#primary:disabled { background: #a7bdf0; color: #eef2fb; }
+QPushButton#danger { background: #dc2626; color: #fff; border: none; font-weight: 600; }
+QPushButton#danger:disabled { background: #f0b3b3; }
+QProgressBar { border: 1px solid #d5dbe3; border-radius: 6px; background: #eef1f5; height: 14px; text-align: center; }
+QProgressBar::chunk { background: #2563eb; border-radius: 5px; }
+#statusText { font-weight: 600; }
+#downloadText { color: #5b6573; }
+#doneOk { background: #e8f7ee; border: 1px solid #9fdcb5; border-radius: 10px; color: #116b35; font-size: 14pt; font-weight: 600; padding: 12px; }
+#doneFail { background: #fdecec; border: 1px solid #f0a8a8; border-radius: 10px; color: #8f1d1d; font-size: 11pt; font-weight: 600; padding: 12px; }
+#details { color: #3c4652; }
+QLabel[link="true"] { color: #2563eb; }
